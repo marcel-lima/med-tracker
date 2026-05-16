@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Check, ArrowRight, Sun, Moon, Bell, BellOff, Download, Trash2, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, ArrowRight, Sun, Moon, Bell, BellOff, Download, Trash2 } from 'lucide-react';
 import { storage } from './lib/storage';
 import { MEDS, MED_ORDER, START, TOTAL_DAYS, DOW_I, MONTHS, SCHEDULE } from './lib/schedule';
-import { requestPermission, scheduleAll, cancelSlot, exportICS } from './lib/notifications';
+import { exportICS } from './lib/notifications';
+import NotifSheet from './components/NotifSheet';
 
 const t2m = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
 
@@ -23,11 +24,11 @@ export default function App() {
   const [dark, setDark] = useState(false);
   const [checked, setChecked] = useState(() => withHistoric({}));
   const [loaded, setLoaded] = useState(false);
-  const [notifEnabled, setNotifEnabled] = useState(false);
   const [selDay, setSelDay] = useState(0);
   const [now, setNow] = useState(new Date());
   const [toast, setToast] = useState(false);
   const [pulsing, setPulsing] = useState(null);
+  const [showNotifSheet, setShowNotifSheet] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const toastTimer = useRef(null);
 
@@ -41,17 +42,12 @@ export default function App() {
     Promise.all([
       storage.get('mt_checked'),
       storage.get('mt_theme'),
-      storage.get('mt_notif'),
-    ]).then(([savedChecked, savedTheme, savedNotif]) => {
+    ]).then(([savedChecked, savedTheme]) => {
       const restoredChecked = withHistoric(savedChecked || {});
       setChecked(restoredChecked);
       if (savedTheme === 'dark') {
         setDark(true);
         document.documentElement.classList.add('dark');
-      }
-      if (savedNotif && Notification.permission === 'granted') {
-        setNotifEnabled(true);
-        scheduleAll(restoredChecked);
       }
       setLoaded(true);
     });
@@ -138,8 +134,7 @@ export default function App() {
         clearTimeout(toastTimer.current);
         setToast(true);
         toastTimer.current = setTimeout(() => setToast(false), 2400);
-        cancelSlot(d, s);
-      }
+        }
       return next;
     });
     setPulsing(key);
@@ -205,12 +200,10 @@ export default function App() {
 
           <div className="flex gap-2 mt-1">
             <button
-              onClick={() => setShowSettings(s => !s)}
+              onClick={() => setShowNotifSheet(true)}
               className="w-9 h-9 rounded-full flex items-center justify-center active:scale-95 transition-transform"
               style={{ background: surface, backdropFilter: 'blur(8px)' }}>
-              {notifEnabled
-                ? <Bell size={15} style={{ color: '#7BCFA0' }} />
-                : <BellOff size={15} style={{ color: textMuted }} />}
+              <Bell size={15} style={{ color: textMuted }} />
             </button>
             <button
               onClick={() => setDark(d => !d)}
@@ -229,42 +222,11 @@ export default function App() {
                style={{ fontFamily: "'Geist Mono',monospace", color: textMuted }}>
               configurações
             </p>
-
-            {/* Notifications */}
-            <button
-              onClick={async () => {
-                const perm = await requestPermission();
-                if (perm === 'granted') {
-                  scheduleAll(checked);
-                  setNotifEnabled(true);
-                  storage.set('mt_notif', true);
-                } else if (perm === 'unsupported') {
-                  alert('Notificações não suportadas neste dispositivo.');
-                } else {
-                  alert('Permissão negada. Ative nas configurações do navegador.');
-                }
-              }}
-              className="flex items-center gap-2 text-sm font-medium active:scale-95 transition-transform"
-              style={{ color: notifEnabled ? '#7BCFA0' : textMain }}>
-              <Bell size={14} style={{ color: notifEnabled ? '#7BCFA0' : textMuted }} />
-              {notifEnabled ? 'Lembretes ativos' : 'Ativar lembretes'}
-            </button>
-
-            {/* .ics for iOS */}
-            <button onClick={exportICS}
-              className="flex items-center gap-2 text-sm font-medium active:scale-95 transition-transform"
-              style={{ color: textMain }}>
-              <Calendar size={14} style={{ color: textMuted }} /> Exportar para Calendário (.ics)
-            </button>
-
-            {/* JSON backup */}
             <button onClick={exportJSON}
               className="flex items-center gap-2 text-sm font-medium active:scale-95 transition-transform"
               style={{ color: textMain }}>
               <Download size={14} style={{ color: textMuted }} /> Exportar backup (JSON)
             </button>
-
-            {/* Reset */}
             <button onClick={resetAll}
               className="flex items-center gap-2 text-sm font-medium active:scale-95 transition-transform"
               style={{ color: '#F08FA0' }}>
@@ -546,6 +508,9 @@ export default function App() {
         </div>
 
       </div>
+
+      {/* ── Notifications Sheet ── */}
+      <NotifSheet open={showNotifSheet} onClose={() => setShowNotifSheet(false)} dark={dark} />
 
       {/* ── Toast ── */}
       {toast && (
