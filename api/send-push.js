@@ -3,12 +3,6 @@
 // Also accepts a secret header to avoid abuse.
 import webpush from 'web-push';
 
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT,
-  process.env.VAPID_PUBLIC_KEY,
-  process.env.VAPID_PRIVATE_KEY
-);
-
 // ─── Schedule (must mirror src/lib/schedule.js) ───────────────────────────────
 const MEDS = {
   amoxil:    { name: 'Amoxil' },
@@ -95,6 +89,16 @@ function getMedsForSlot(slotTime) {
 }
 
 export default async function handler(req, res) {
+  try {
+    webpush.setVapidDetails(
+      process.env.VAPID_SUBJECT,
+      process.env.VAPID_PUBLIC_KEY,
+      process.env.VAPID_PRIVATE_KEY
+    );
+  } catch (e) {
+    return res.status(500).json({ error: 'vapid_init_failed', detail: e.message });
+  }
+
   // Simple secret check to prevent abuse
   const secret = req.headers['x-cron-secret'] || req.query.secret;
   if (secret !== process.env.CRON_SECRET) {
@@ -127,7 +131,6 @@ export default async function handler(req, res) {
     res.status(200).json({ ok: true, meds: medNames });
   } catch (e) {
     console.error('push error:', e);
-    // If subscription expired/invalid, remove it
     if (e.statusCode === 410 || e.statusCode === 404) {
       await upstashDel('push-sub');
       return res.status(200).json({ ok: true, msg: 'subscription expired, removed' });
