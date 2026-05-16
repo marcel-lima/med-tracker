@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    -webkit-tap-highlight-color: transparent;
+    font-family: 'Geist', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  #root { min-height: 100svh; }
+}
+
+@layer utilities {
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 24px); }
+}
+
+@keyframes medPulse {
+  from { opacity: 0.6; transform: scale(1); }
+  to   { opacity: 0;   transform: scale(2); }
+}
+
+@keyframes toastUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.med-pulse-ring {
+  animation: medPulse 0.55s ease-out forwards;
+}
+
+.toast-enter {
+  animation: toastUp 0.28s ease-out forwards;
+}
