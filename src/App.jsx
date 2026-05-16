@@ -21,9 +21,8 @@ function withHistoric(saved = {}) {
 
 // ─── App ─────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [dark, setDark] = useState(false);
-  const [checked, setChecked] = useState(() => withHistoric({}));
-  const [loaded, setLoaded] = useState(false);
+  const [dark, setDark] = useState(() => storage.get('mt_theme') === 'dark');
+  const [checked, setChecked] = useState(() => withHistoric(storage.get('mt_checked') || {}));
   const [selDay, setSelDay] = useState(0);
   const [now, setNow] = useState(new Date());
   const [toast, setToast] = useState(false);
@@ -37,20 +36,9 @@ export default function App() {
     return Math.max(0, Math.min(diff, TOTAL_DAYS - 1));
   }, []);
 
-  // Load persisted state async (IndexedDB)
+  // Apply dark class on mount
   useEffect(() => {
-    Promise.all([
-      storage.get('mt_checked'),
-      storage.get('mt_theme'),
-    ]).then(([savedChecked, savedTheme]) => {
-      const restoredChecked = withHistoric(savedChecked || {});
-      setChecked(restoredChecked);
-      if (savedTheme === 'dark') {
-        setDark(true);
-        document.documentElement.classList.add('dark');
-      }
-      setLoaded(true);
-    });
+    document.documentElement.classList.toggle('dark', dark);
   }, []);
 
   // Init selected day to today
@@ -62,17 +50,12 @@ export default function App() {
     return () => clearInterval(id);
   }, []);
 
-  // Persist checked (debounced via useEffect)
-  useEffect(() => {
-    if (!loaded) return;
-    storage.set('mt_checked', checked);
-  }, [checked, loaded]);
+  useEffect(() => { storage.set('mt_checked', checked); }, [checked]);
 
   useEffect(() => {
-    if (!loaded) return;
     storage.set('mt_theme', dark ? 'dark' : 'light');
     document.documentElement.classList.toggle('dark', dark);
-  }, [dark, loaded]);
+  }, [dark]);
 
   const greeting = useMemo(() => {
     const h = now.getHours();
