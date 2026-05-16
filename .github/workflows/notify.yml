@@ -1,0 +1,45 @@
+# Fires at each medication time (BRT = UTC-3)
+# 08:00 BRT = 11:00 UTC | 11:00 = 14:00 | 13:00 = 16:00
+# 16:00 = 19:00 | 19:00 = 22:00 | 23:00 = 02:00 UTC next day
+name: Med Notifications
+
+on:
+  schedule:
+    - cron: '0 11 * * *'   # 08:00 BRT
+    - cron: '0 14 * * *'   # 11:00 BRT
+    - cron: '0 16 * * *'   # 13:00 BRT
+    - cron: '0 19 * * *'   # 16:00 BRT
+    - cron: '0 22 * * *'   # 19:00 BRT
+    - cron: '0 2 * * *'    # 23:00 BRT (next day UTC)
+  workflow_dispatch:
+    inputs:
+      slot:
+        description: 'Slot to test (e.g. 08:00)'
+        required: true
+        default: '08:00'
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine slot from UTC hour
+        id: slot
+        run: |
+          HOUR=$(date -u +%-H)
+          case $HOUR in
+            11) echo "slot=08:00" >> $GITHUB_OUTPUT ;;
+            14) echo "slot=11:00" >> $GITHUB_OUTPUT ;;
+            16) echo "slot=13:00" >> $GITHUB_OUTPUT ;;
+            19) echo "slot=16:00" >> $GITHUB_OUTPUT ;;
+            22) echo "slot=19:00" >> $GITHUB_OUTPUT ;;
+            2)  echo "slot=23:00" >> $GITHUB_OUTPUT ;;
+            *)  echo "slot=${{ github.event.inputs.slot || '08:00' }}" >> $GITHUB_OUTPUT ;;
+          esac
+
+      - name: Send push notification
+        run: |
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/send-push?slot=${{ steps.slot.outputs.slot }}")
+          echo "Response: $RESPONSE for slot ${{ steps.slot.outputs.slot }}"
+          [ "$RESPONSE" -eq 200 ] || exit 1
