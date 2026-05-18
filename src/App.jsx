@@ -59,10 +59,10 @@ export default function App() {
 
   const greeting = useMemo(() => {
     const h = now.getHours();
-    if (h >= 5 && h < 12) return 'good morning';
-    if (h >= 12 && h < 18) return 'good afternoon';
-    if (h >= 18) return 'good evening';
-    return 'good night';
+    if (h >= 5 && h < 12) return 'good morning, Marcel';
+    if (h >= 12 && h < 18) return 'good afternoon, Marcel';
+    if (h >= 18) return 'good evening, Marcel';
+    return 'good night, Marcel';
   }, [now]);
 
   // Progress helpers
