@@ -59,10 +59,10 @@ export default function App() {
 
   const greeting = useMemo(() => {
     const h = now.getHours();
-    if (h >= 5 && h < 12) return 'bom dia';
-    if (h >= 12 && h < 18) return 'boa tarde';
-    if (h >= 18) return 'boa noite';
-    return 'boa madrugada';
+    if (h >= 5 && h < 12) return 'good morning';
+    if (h >= 12 && h < 18) return 'good afternoon';
+    if (h >= 18) return 'good evening';
+    return 'good night';
   }, [now]);
 
   // Progress helpers
@@ -137,7 +137,7 @@ export default function App() {
   };
 
   const resetAll = () => {
-    if (!confirm('Limpar todas as doses marcadas?')) return;
+    if (!confirm('Clear all marked doses?')) return;
     setChecked(withHistoric({}));
   };
 
@@ -147,7 +147,7 @@ export default function App() {
   const nextMed = nextDose ? MEDS[nextDose.slot.meds[0]] : null;
 
   const formatDate = (date) =>
-    `${['dom','seg','ter','qua','qui','sex','sáb'][date.getDay()]}, ${date.getDate()} ${MONTHS[date.getMonth()]}`;
+    `${['sun','mon','tue','wed','thu','fri','sat'][date.getDay()]}, ${MONTHS[date.getMonth()]} ${date.getDate()}`;
 
   // ─ Theme tokens ─
   const surface = dark ? 'rgba(255,248,236,0.04)' : 'rgba(255,255,255,0.65)';
@@ -177,7 +177,7 @@ export default function App() {
             </p>
             <h1 className="text-[2.6rem] leading-none m-0"
                 style={{ fontFamily: "'Instrument Serif',serif", fontStyle: 'italic' }}>
-              Remédios.
+              Meds.
             </h1>
           </div>
 
@@ -203,17 +203,17 @@ export default function App() {
                style={{ background: surface, backdropFilter: 'blur(12px)' }}>
             <p className="text-[10px] uppercase tracking-[0.22em]"
                style={{ fontFamily: "'Geist Mono',monospace", color: textMuted }}>
-              configurações
+              settings
             </p>
             <button onClick={exportJSON}
               className="flex items-center gap-2 text-sm font-medium active:scale-95 transition-transform"
               style={{ color: textMain }}>
-              <Download size={14} style={{ color: textMuted }} /> Exportar backup (JSON)
+              <Download size={14} style={{ color: textMuted }} /> Export backup (JSON)
             </button>
             <button onClick={resetAll}
               className="flex items-center gap-2 text-sm font-medium active:scale-95 transition-transform"
               style={{ color: '#F08FA0' }}>
-              <Trash2 size={14} /> Resetar tudo
+              <Trash2 size={14} /> Reset all
             </button>
           </div>
         )}
@@ -268,7 +268,7 @@ export default function App() {
             <div className="relative">
               <p className="text-[10px] uppercase tracking-[0.22em] mb-1"
                  style={{ fontFamily: "'Geist Mono',monospace", color: textMuted }}>
-                próxima dose
+                next dose
               </p>
               <div className="text-[4.5rem] leading-none mb-3"
                    style={{ fontFamily: "'Instrument Serif',serif" }}>
@@ -289,7 +289,7 @@ export default function App() {
                 onClick={() => scrollToSlot(nextDose.d, nextDose.s)}
                 className="flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium active:scale-95 transition-transform"
                 style={{ background: dark ? '#FCF1DD' : '#1F1B16', color: dark ? '#1F1B16' : '#FFF8EC' }}>
-                Ir para {nextDose.slot.time} <ArrowRight size={14} />
+                Go to {nextDose.slot.time} <ArrowRight size={14} />
               </button>
             </div>
           </div>
@@ -309,7 +309,7 @@ export default function App() {
             <div className="flex items-center justify-between mb-2">
               <span className="text-[10px] uppercase tracking-[0.22em]"
                     style={{ fontFamily: "'Geist Mono',monospace", color: textMuted }}>
-                dia {selDay + 1}/11
+                day {selDay + 1}/11
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-[10px]"
@@ -320,7 +320,7 @@ export default function App() {
                   <button onClick={() => setSelDay(todayIdx)}
                           className="text-[10px] active:opacity-60 transition-opacity"
                           style={{ color: '#F39A55', fontFamily: "'Geist Mono',monospace" }}>
-                    hoje →
+                    today →
                   </button>
                 )}
               </div>
@@ -408,7 +408,7 @@ export default function App() {
                     {isHistoric && (
                       <p className="text-[9px] uppercase tracking-[0.2em] mb-2"
                          style={{ fontFamily: "'Geist Mono',monospace", color: textMuted }}>
-                        histórico
+                        past
                       </p>
                     )}
 
@@ -469,7 +469,7 @@ export default function App() {
              style={{ background: surface, backdropFilter: 'blur(8px)' }}>
           <p className="text-[10px] uppercase tracking-[0.22em] mb-4"
              style={{ fontFamily: "'Geist Mono',monospace", color: textMuted }}>
-            tratamento
+            treatment
           </p>
           <div className="flex flex-col gap-3">
             {MED_ORDER.map(mk => {
@@ -501,7 +501,7 @@ export default function App() {
              style={{ transform: 'translateX(-50%)' }}>
           <div className="flex items-center gap-2 px-5 py-3 rounded-full text-sm font-semibold shadow-lg"
                style={{ background: '#7BCFA0', color: '#1F6B40' }}>
-            <Check size={14} strokeWidth={2.5} /> dia completo
+            <Check size={14} strokeWidth={2.5} /> day complete
           </div>
         </div>
       )}

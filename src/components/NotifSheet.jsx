@@ -70,10 +70,10 @@ export default function NotifSheet({ open, onClose, dark }) {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-lg font-semibold" style={{ fontFamily: "'Instrument Serif',serif", color: textMain }}>
-              Lembretes
+              Reminders
             </h2>
             <p className="text-xs mt-0.5" style={{ color: textMuted, fontFamily: "'Geist Mono',monospace", textTransform: 'uppercase', letterSpacing: '0.18em' }}>
-              notificações de dose
+              dose notifications
             </p>
           </div>
           <button onClick={onClose}
@@ -86,23 +86,23 @@ export default function NotifSheet({ open, onClose, dark }) {
         {/* Content by status */}
         {status === 'unsupported' && (
           <StatusBlock icon={<AlertCircle size={20} color="#F08FA0" />}
-            title="Não suportado"
-            body="Seu navegador não suporta notificações push. Tente o Chrome no Android."
+            title="Not supported"
+            body="Your browser doesn't support push notifications. Try Chrome on Android."
             textMain={textMain} textMuted={textMuted} />
         )}
 
         {status === 'not-pwa' && (
           <div>
             <StatusBlock icon={<Smartphone size={20} color="#F39A55" />}
-              title="Instale o app primeiro"
-              body="No iPhone, o app precisa estar instalado para receber notificações."
+              title="Install the app first"
+              body="On iPhone, the app needs to be installed to receive notifications."
               textMain={textMain} textMuted={textMuted} />
             <ol className="mt-4 space-y-2.5">
               {[
-                'Toque no ícone de compartilhamento (□↑) no Safari',
-                'Role e toque em "Adicionar à Tela de Início"',
-                'Toque em "Adicionar"',
-                'Abra o app pela tela de início e volte aqui',
+                'Tap the share icon (□↑) in Safari',
+                'Scroll and tap "Add to Home Screen"',
+                'Tap "Add"',
+                'Open the app from your home screen and come back here',
               ].map((step, i) => (
                 <li key={i} className="flex gap-3 text-sm" style={{ color: textMain }}>
                   <span className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold"
@@ -118,22 +118,22 @@ export default function NotifSheet({ open, onClose, dark }) {
 
         {status === 'denied' && (
           <StatusBlock icon={<BellOff size={20} color="#F08FA0" />}
-            title="Permissão bloqueada"
-            body="Ative as notificações em: Configurações → Safari → Notificações → Remédios → Permitir."
+            title="Permission blocked"
+            body="Enable notifications at: Settings → Safari → Notifications → Meds → Allow."
             textMain={textMain} textMuted={textMuted} />
         )}
 
         {status === 'granted' && subscribed && (
           <>
             <StatusBlock icon={<CheckCircle size={20} color="#7BCFA0" />}
-              title="Lembretes ativos"
-              body="Você vai receber uma notificação em cada horário de dose, mesmo com o app fechado."
+              title="Reminders active"
+              body="You'll receive a notification at each dose time, even when the app is closed."
               textMain={textMain} textMuted={textMuted} />
             <button
               onClick={handleDeactivate}
               className="mt-5 w-full py-3 rounded-full text-sm font-medium active:scale-95 transition-transform"
               style={{ background: divider, color: textMuted }}>
-              Desativar lembretes
+              Disable reminders
             </button>
           </>
         )}
@@ -141,21 +141,21 @@ export default function NotifSheet({ open, onClose, dark }) {
         {(status === 'idle' || (status === 'granted' && !subscribed)) && (
           <>
             <StatusBlock icon={<Bell size={20} color="#F39A55" />}
-              title="Ative os lembretes"
-              body="Receba uma notificação em cada horário de dose, mesmo com o app fechado."
+              title="Enable reminders"
+              body="Receive a notification at each dose time, even when the app is closed."
               textMain={textMain} textMuted={textMuted} />
             <button
               onClick={handleActivate}
               className="mt-5 w-full py-3.5 rounded-full text-sm font-semibold active:scale-95 transition-transform"
               style={{ background: dark ? '#FCF1DD' : '#1F1B16', color: dark ? '#1F1B16' : '#FFF8EC' }}>
-              Ativar lembretes
+              Enable reminders
             </button>
           </>
         )}
 
         {status === 'requesting' && (
           <div className="text-center py-4 text-sm" style={{ color: textMuted }}>
-            Aguardando permissão…
+            Waiting for permission…
           </div>
         )}
       </div>

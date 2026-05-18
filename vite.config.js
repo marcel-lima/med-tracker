@@ -12,9 +12,9 @@ export default defineConfig({
       filename: 'sw.js',
       includeAssets: ['favicon.svg', 'icons/*.png'],
       manifest: {
-        name: 'Remédios — Tratamento Maio 2026',
-        short_name: 'Remédios',
-        description: 'Controle de medicação do tratamento de 11 dias',
+        name: 'Meds — May 2026 Treatment',
+        short_name: 'Meds',
+        description: '11-day treatment medication tracker',
         start_url: '/',
         display: 'standalone',
         orientation: 'portrait',

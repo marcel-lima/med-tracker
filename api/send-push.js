@@ -120,7 +120,7 @@ export default async function handler(req, res) {
   const subscription = JSON.parse(subJson);
 
   const payload = JSON.stringify({
-    title: `Hora do remédio — ${slot}`,
+    title: `Time for your meds — ${slot}`,
     body: medNames.join(', '),
     tag: `dose-${slot.replace(':', '')}`,
     url: '/',
