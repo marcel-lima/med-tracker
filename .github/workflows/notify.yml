@@ -22,19 +22,21 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Determine slot from UTC hour
+      - name: Determine slot from schedule expression
         id: slot
         run: |
-          HOUR=$(date -u +%-H)
-          case $HOUR in
-            11) echo "slot=08:00" >> $GITHUB_OUTPUT ;;
-            14) echo "slot=11:00" >> $GITHUB_OUTPUT ;;
-            16) echo "slot=13:00" >> $GITHUB_OUTPUT ;;
-            19) echo "slot=16:00" >> $GITHUB_OUTPUT ;;
-            22) echo "slot=19:00" >> $GITHUB_OUTPUT ;;
-            2)  echo "slot=23:00" >> $GITHUB_OUTPUT ;;
-            *)  echo "slot=${{ github.event.inputs.slot || '08:00' }}" >> $GITHUB_OUTPUT ;;
+          SCHEDULE="${{ github.event.schedule }}"
+          INPUT_SLOT="${{ github.event.inputs.slot }}"
+          case "$SCHEDULE" in
+            "0 11 * * *") SLOT="08:00" ;;
+            "0 14 * * *") SLOT="11:00" ;;
+            "0 16 * * *") SLOT="13:00" ;;
+            "0 19 * * *") SLOT="16:00" ;;
+            "0 22 * * *") SLOT="19:00" ;;
+            "0 2 * * *")  SLOT="23:00" ;;
+            *)             SLOT="${INPUT_SLOT:-08:00}" ;;
           esac
+          echo "slot=$SLOT" >> $GITHUB_OUTPUT
 
       - name: Send push notification
         run: |
