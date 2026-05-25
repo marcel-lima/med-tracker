@@ -5,66 +5,38 @@ import webpush from 'web-push';
 
 // ─── Schedule (must mirror src/lib/schedule.js) ───────────────────────────────
 const MEDS = {
-  amoxil:    { name: 'Amoxil' },
-  tylenol:   { name: 'Tylenol Sinus' },
-  predsim:   { name: 'Predsim' },
-  aerolin:   { name: 'Aerolin' },
-  rinossoro: { name: 'Rinossoro' },
+  seki:    { name: 'Seki Xarope' },
+  levoxin: { name: 'Levoxin' },
+  flancox: { name: 'Flancox' },
 };
 
 const SCHEDULE = buildSchedule();
 
 function buildSchedule() {
-  const START = new Date(2026, 4, 15);
+  const START = new Date(2026, 4, 19);
   const days = [];
   const addD = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
 
-  for (let i = 0; i < 11; i++) {
+  for (let i = 0; i < 7; i++) {
     const date = addD(START, i);
     let slots = [];
     if (i === 0) {
       slots = [
-        { time: '18:00', meds: ['aerolin', 'rinossoro'], historic: true },
-        { time: '23:00', meds: ['amoxil', 'tylenol', 'aerolin'] },
+        { time: '08:00', meds: ['flancox'], historic: true },
+        { time: '12:00', meds: ['seki', 'levoxin'], historic: true },
+        { time: '20:00', meds: ['flancox'], historic: true },
+        { time: '23:00', meds: ['seki'] },
       ];
-    } else if (i >= 1 && i <= 5) {
+    } else if (i >= 1 && i <= 4) {
       slots = [
-        { time: '08:00', meds: ['tylenol', 'predsim', 'rinossoro', 'aerolin'] },
-        { time: '11:00', meds: ['amoxil'] },
-        { time: '13:00', meds: ['aerolin', 'rinossoro'] },
-        { time: '16:00', meds: ['tylenol'] },
-        { time: '19:00', meds: ['aerolin', 'rinossoro'] },
-        { time: '23:00', meds: ['amoxil', 'tylenol', 'aerolin'] },
-      ];
-    } else if (i === 6) {
-      slots = [
-        { time: '08:00', meds: ['rinossoro', 'aerolin'] },
-        { time: '11:00', meds: ['amoxil'] },
-        { time: '13:00', meds: ['aerolin', 'rinossoro'] },
-        { time: '19:00', meds: ['aerolin', 'rinossoro'] },
-        { time: '23:00', meds: ['amoxil', 'aerolin'] },
-      ];
-    } else if (i === 7) {
-      slots = [
-        { time: '08:00', meds: ['rinossoro', 'aerolin'] },
-        { time: '11:00', meds: ['amoxil'] },
-        { time: '13:00', meds: ['aerolin', 'rinossoro'] },
-        { time: '19:00', meds: ['aerolin', 'rinossoro'] },
-        { time: '23:00', meds: ['aerolin'] },
-      ];
-    } else if (i === 8 || i === 9) {
-      slots = [
-        { time: '08:00', meds: ['rinossoro', 'aerolin'] },
-        { time: '13:00', meds: ['aerolin', 'rinossoro'] },
-        { time: '19:00', meds: ['aerolin', 'rinossoro'] },
-        { time: '23:00', meds: ['aerolin'] },
+        { time: '08:00', meds: ['seki', 'flancox'] },
+        { time: '13:00', meds: ['seki', 'levoxin'] },
+        { time: '20:00', meds: ['flancox'] },
+        { time: '23:00', meds: ['seki'] },
       ];
     } else {
       slots = [
-        { time: '08:00', meds: ['aerolin'] },
-        { time: '13:00', meds: ['aerolin'] },
-        { time: '19:00', meds: ['aerolin'] },
-        { time: '23:00', meds: ['aerolin'] },
+        { time: '13:00', meds: ['levoxin'] },
       ];
     }
     days.push({ date, slots });
