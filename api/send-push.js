@@ -13,7 +13,7 @@ const MEDS = {
 const SCHEDULE = buildSchedule();
 
 function buildSchedule() {
-  const START = new Date(2026, 4, 25);
+  const START = new Date(2026, 4, 24);
   const days = [];
   const addD = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
 
@@ -25,7 +25,7 @@ function buildSchedule() {
         { time: '08:00', meds: ['flancox'], historic: true },
         { time: '12:00', meds: ['seki', 'levoxin'], historic: true },
         { time: '20:00', meds: ['flancox'], historic: true },
-        { time: '23:00', meds: ['seki'] },
+        { time: '23:00', meds: ['seki'], historic: true },
       ];
     } else if (i >= 1 && i <= 4) {
       slots = [
