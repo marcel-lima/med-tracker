@@ -4,7 +4,7 @@ export const MEDS = {
   flancox: { name: 'Flancox',     dose: '1 cp',  freq: '12/12h',  g1: '#EFCFF9', g2: '#C57AE6', ink: '#682A82' },
 };
 export const MED_ORDER = ['seki', 'levoxin', 'flancox'];
-export const START = new Date(2026, 4, 19);
+export const START = new Date(2026, 4, 25);
 export const TOTAL_DAYS = 7;
 export const DOW_I = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 export const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];

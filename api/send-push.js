@@ -13,7 +13,7 @@ const MEDS = {
 const SCHEDULE = buildSchedule();
 
 function buildSchedule() {
-  const START = new Date(2026, 4, 19);
+  const START = new Date(2026, 4, 25);
   const days = [];
   const addD = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
 
