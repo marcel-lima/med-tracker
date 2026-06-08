@@ -12,9 +12,9 @@ export default defineConfig({
       filename: 'sw.js',
       includeAssets: ['favicon.svg', 'icons/*.png'],
       manifest: {
-        name: 'Meds — May 2026 Treatment',
+        name: 'Meds — Jun 2026 Treatment',
         short_name: 'Meds',
-        description: '11-day treatment medication tracker',
+        description: '5-day treatment medication tracker',
         start_url: '/',
         display: 'standalone',
         orientation: 'portrait',

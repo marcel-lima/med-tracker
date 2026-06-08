@@ -5,38 +5,30 @@ import webpush from 'web-push';
 
 // ─── Schedule (must mirror src/lib/schedule.js) ───────────────────────────────
 const MEDS = {
-  seki:    { name: 'Seki Xarope' },
-  levoxin: { name: 'Levoxin' },
-  flancox: { name: 'Flancox' },
+  culturelle: { name: 'Culturelle' },
+  buscopan:   { name: 'Buscopan' },
+  novalgina:  { name: 'Novalgina' },
 };
 
 const SCHEDULE = buildSchedule();
 
 function buildSchedule() {
-  const START = new Date(2026, 4, 24);
+  const START = new Date(2026, 5, 8);
   const days = [];
   const addD = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
 
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 5; i++) {
     const date = addD(START, i);
     let slots = [];
     if (i === 0) {
       slots = [
-        { time: '08:00', meds: ['flancox'], historic: true },
-        { time: '12:00', meds: ['seki', 'levoxin'], historic: true },
-        { time: '20:00', meds: ['flancox'], historic: true },
-        { time: '23:00', meds: ['seki'], historic: true },
-      ];
-    } else if (i >= 1 && i <= 4) {
-      slots = [
-        { time: '08:00', meds: ['seki', 'flancox'] },
-        { time: '13:00', meds: ['seki', 'levoxin'] },
-        { time: '20:00', meds: ['flancox'] },
-        { time: '23:00', meds: ['seki'] },
+        { time: '08:00', meds: ['culturelle', 'buscopan', 'novalgina'], historic: true },
+        { time: '20:00', meds: ['buscopan', 'novalgina'] },
       ];
     } else {
       slots = [
-        { time: '13:00', meds: ['levoxin'] },
+        { time: '08:00', meds: ['culturelle', 'buscopan', 'novalgina'] },
+        { time: '20:00', meds: ['buscopan', 'novalgina'] },
       ];
     }
     days.push({ date, slots });
