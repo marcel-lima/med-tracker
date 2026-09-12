@@ -6,6 +6,6 @@ export const storage = {
     } catch { return null; }
   },
   set(key, value) {
-    try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* storage full or unavailable */ }
   },
 };

@@ -1,32 +1,43 @@
 import { useState, useEffect } from 'react';
-import { Bell, BellOff, X, Smartphone, CheckCircle, AlertCircle } from 'lucide-react';
+import { Bell, BellOff, X, Smartphone, CheckCircle, AlertCircle, Send } from 'lucide-react';
 import { isPushSupported, isInstalledPWA, getPushPermission, subscribePush, unsubscribePush } from '../lib/push';
+import { sendTestPush } from '../lib/api';
 
-export default function NotifSheet({ open, onClose, dark }) {
+const OFFSETS = [
+  { label: 'na hora', value: 0 },
+  { label: '5 min antes', value: -5 },
+  { label: '10 min antes', value: -10 },
+  { label: '15 min antes', value: -15 },
+];
+const REPEATS = [
+  { label: 'não', value: 0 },
+  { label: '15 min', value: 15 },
+  { label: '30 min', value: 30 },
+  { label: '1 h', value: 60 },
+];
+
+export default function NotifSheet({ open, onClose, reminders, onChangeReminders }) {
   const [status, setStatus] = useState('idle'); // idle | requesting | granted | denied | unsupported | not-pwa
   const [subscribed, setSubscribed] = useState(false);
-
-  const surface = dark ? 'rgba(30,26,20,0.98)' : 'rgba(255,252,245,0.98)';
-  const textMain = dark ? '#FCF1DD' : '#1F1B16';
-  const textMuted = dark ? 'rgba(252,241,221,0.55)' : 'rgba(31,27,22,0.50)';
-  const divider = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+  const [testing, setTesting] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    if (!isPushSupported()) { setStatus('unsupported'); return; }
-    if (!isInstalledPWA()) { setStatus('not-pwa'); return; }
-    getPushPermission().then((perm) => {
-      if (perm === 'granted') setStatus('granted');
-      else if (perm === 'denied') setStatus('denied');
-      else setStatus('idle');
-    });
-    // Check existing subscription
-    navigator.serviceWorker.ready.then((reg) =>
-      reg.pushManager.getSubscription().then((sub) => setSubscribed(!!sub))
-    );
+    let alive = true;
+    (async () => {
+      if (!isPushSupported()) { if (alive) setStatus('unsupported'); return; }
+      if (!isInstalledPWA()) { if (alive) setStatus('not-pwa'); return; }
+      const perm = await getPushPermission();
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (!alive) return;
+      setSubscribed(!!sub);
+      setStatus(perm === 'granted' ? 'granted' : perm === 'denied' ? 'denied' : 'idle');
+    })();
+    return () => { alive = false; };
   }, [open]);
 
-  const handleActivate = async () => {
+  const activate = async () => {
     setStatus('requesting');
     try {
       const perm = await Notification.requestPermission();
@@ -35,80 +46,54 @@ export default function NotifSheet({ open, onClose, dark }) {
       setSubscribed(true);
       setStatus('granted');
     } catch (e) {
-      setStatus('idle');
       console.error(e);
+      setStatus('idle');
     }
   };
 
-  const handleDeactivate = async () => {
+  const deactivate = async () => {
     await unsubscribePush();
     setSubscribed(false);
     setStatus('idle');
   };
 
+  const test = async () => {
+    setTesting(true);
+    await sendTestPush();
+    setTimeout(() => setTesting(false), 1500);
+  };
+
   if (!open) return null;
+  const active = status === 'granted' && subscribed;
 
   return (
     <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-40"
-        style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
-        onClick={onClose}
-      />
+      <div className="backdrop" onClick={onClose} />
+      <div className="bottom-sheet max-w-lg mx-auto">
+        <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background: 'var(--line)' }} />
 
-      {/* Sheet */}
-      <div
-        className="fixed bottom-0 left-0 right-0 z-50 rounded-t-[32px] px-6 pt-5 pb-10 max-w-lg mx-auto"
-        style={{ background: surface, boxShadow: '0 -8px 40px rgba(0,0,0,0.25)' }}>
-
-        {/* Handle */}
-        <div className="w-10 h-1 rounded-full mx-auto mb-5"
-             style={{ background: divider }} />
-
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-lg font-semibold" style={{ fontFamily: "'Instrument Serif',serif", color: textMain }}>
-              Reminders
-            </h2>
-            <p className="text-xs mt-0.5" style={{ color: textMuted, fontFamily: "'Geist Mono',monospace", textTransform: 'uppercase', letterSpacing: '0.18em' }}>
-              dose notifications
-            </p>
+            <p className="eyebrow">notificações</p>
+            <h2 className="text-xl font-semibold tracking-tight">Lembretes</h2>
           </div>
-          <button onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-transform"
-            style={{ background: divider }}>
-            <X size={14} style={{ color: textMuted }} />
-          </button>
+          <button onClick={onClose} className="icon-btn" aria-label="Fechar"><X size={14} /></button>
         </div>
 
-        {/* Content by status */}
         {status === 'unsupported' && (
-          <StatusBlock icon={<AlertCircle size={20} color="#F08FA0" />}
-            title="Not supported"
-            body="Your browser doesn't support push notifications. Try Chrome on Android."
-            textMain={textMain} textMuted={textMuted} />
+          <Block icon={<AlertCircle size={20} color="#E5484D" />} title="Sem suporte"
+                 body="Este navegador não recebe notificações push. No iPhone use o Safari; no Android, o Chrome." />
         )}
 
         {status === 'not-pwa' && (
           <div>
-            <StatusBlock icon={<Smartphone size={20} color="#F39A55" />}
-              title="Install the app first"
-              body="On iPhone, the app needs to be installed to receive notifications."
-              textMain={textMain} textMuted={textMuted} />
+            <Block icon={<Smartphone size={20} color="#F5822B" />} title="Instale o app primeiro"
+                   body="No iPhone, as notificações só chegam com o app na tela de início." />
             <ol className="mt-4 space-y-2.5">
-              {[
-                'Tap the share icon (□↑) in Safari',
-                'Scroll and tap "Add to Home Screen"',
-                'Tap "Add"',
-                'Open the app from your home screen and come back here',
-              ].map((step, i) => (
-                <li key={i} className="flex gap-3 text-sm" style={{ color: textMain }}>
-                  <span className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold"
-                        style={{ background: '#F39A55', color: '#fff', marginTop: 1 }}>
-                    {i + 1}
-                  </span>
+              {['Toque em Compartilhar (□↑) no Safari', 'Toque em "Adicionar à Tela de Início"', 'Toque em "Adicionar"', 'Abra o app pelo ícone e volte aqui'].map((step, i) => (
+                <li key={i} className="flex gap-3 text-sm">
+                  <span className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-semibold"
+                        style={{ background: 'var(--primary)', color: 'var(--primary-fg)', marginTop: 1 }}>{i + 1}</span>
                   {step}
                 </li>
               ))}
@@ -117,59 +102,68 @@ export default function NotifSheet({ open, onClose, dark }) {
         )}
 
         {status === 'denied' && (
-          <StatusBlock icon={<BellOff size={20} color="#F08FA0" />}
-            title="Permission blocked"
-            body="Enable notifications at: Settings → Safari → Notifications → Meds → Allow."
-            textMain={textMain} textMuted={textMuted} />
-        )}
-
-        {status === 'granted' && subscribed && (
-          <>
-            <StatusBlock icon={<CheckCircle size={20} color="#7BCFA0" />}
-              title="Reminders active"
-              body="You'll receive a notification at each dose time, even when the app is closed."
-              textMain={textMain} textMuted={textMuted} />
-            <button
-              onClick={handleDeactivate}
-              className="mt-5 w-full py-3 rounded-full text-sm font-medium active:scale-95 transition-transform"
-              style={{ background: divider, color: textMuted }}>
-              Disable reminders
-            </button>
-          </>
-        )}
-
-        {(status === 'idle' || (status === 'granted' && !subscribed)) && (
-          <>
-            <StatusBlock icon={<Bell size={20} color="#F39A55" />}
-              title="Enable reminders"
-              body="Receive a notification at each dose time, even when the app is closed."
-              textMain={textMain} textMuted={textMuted} />
-            <button
-              onClick={handleActivate}
-              className="mt-5 w-full py-3.5 rounded-full text-sm font-semibold active:scale-95 transition-transform"
-              style={{ background: dark ? '#FCF1DD' : '#1F1B16', color: dark ? '#1F1B16' : '#FFF8EC' }}>
-              Enable reminders
-            </button>
-          </>
+          <Block icon={<BellOff size={20} color="#E5484D" />} title="Permissão bloqueada"
+                 body="Libere em Ajustes → Notificações → Remédios → Permitir." />
         )}
 
         {status === 'requesting' && (
-          <div className="text-center py-4 text-sm" style={{ color: textMuted }}>
-            Waiting for permission…
-          </div>
+          <p className="text-center py-4 text-sm" style={{ color: 'var(--muted)' }}>Aguardando permissão…</p>
+        )}
+
+        {(status === 'idle' || status === 'granted') && (
+          <>
+            {active ? (
+              <Block icon={<CheckCircle size={20} color="#3DBF7A" />} title="Lembretes ativos"
+                     body="Você recebe um aviso em cada dose, mesmo com o app fechado." />
+            ) : (
+              <Block icon={<Bell size={20} color="#F5822B" />} title="Ativar lembretes"
+                     body="Receba um aviso em cada dose, mesmo com o app fechado." />
+            )}
+
+            <div className="mt-6">
+              <p className="eyebrow mb-2">avisar</p>
+              <div className="flex flex-wrap gap-1.5">
+                {OFFSETS.map(o => (
+                  <button key={o.value} className={`chip ${reminders.offsetMin === o.value ? 'chip-on' : ''}`}
+                          onClick={() => onChangeReminders({ ...reminders, offsetMin: o.value })}>{o.label}</button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <p className="eyebrow mb-2">repetir se eu não marcar</p>
+              <div className="flex flex-wrap gap-1.5">
+                {REPEATS.map(r => (
+                  <button key={r.value} className={`chip ${reminders.repeatMin === r.value ? 'chip-on' : ''}`}
+                          onClick={() => onChangeReminders({ ...reminders, repeatMin: r.value })}>{r.label}</button>
+                ))}
+              </div>
+            </div>
+
+            {active ? (
+              <div className="flex gap-2 mt-6">
+                <button onClick={deactivate} className="btn flex-1" style={{ color: 'var(--muted)' }}>Desativar</button>
+                <button onClick={test} className="btn flex-1" disabled={testing}>
+                  <Send size={14} /> {testing ? 'Enviado' : 'Testar'}
+                </button>
+              </div>
+            ) : (
+              <button onClick={activate} className="btn btn-primary w-full mt-6">Ativar lembretes</button>
+            )}
+          </>
         )}
       </div>
     </>
   );
 }
 
-function StatusBlock({ icon, title, body, textMain, textMuted }) {
+function Block({ icon, title, body }) {
   return (
     <div className="flex gap-3">
       <div className="mt-0.5 flex-shrink-0">{icon}</div>
       <div>
-        <p className="text-sm font-semibold mb-1" style={{ color: textMain }}>{title}</p>
-        <p className="text-sm leading-relaxed" style={{ color: textMuted }}>{body}</p>
+        <p className="text-sm font-semibold mb-1">{title}</p>
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>{body}</p>
       </div>
     </div>
   );
