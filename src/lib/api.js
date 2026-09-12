@@ -36,3 +36,14 @@ export function setChecked(key, value) {
 export function sendTestPush() {
   return call('/api/test-push', {});
 }
+
+// Fetch what the server has (used by a fresh device to restore the treatment).
+export async function fetchTreatment() {
+  try {
+    const r = await fetch('/api/treatment', { cache: 'no-store' });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch {
+    return null;
+  }
+}

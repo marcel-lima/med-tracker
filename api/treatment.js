@@ -1,10 +1,21 @@
+// GET → { treatment, checked }  (lets a fresh device restore what another one saved)
 // POST { treatment, reminders, checked }
 // Replaces the treatment on the server and (re)schedules every reminder.
 // treatment: null → clears everything and cancels all reminders.
-import { setJSON, del, cmd } from '../server/redis.js';
+import { setJSON, getJSON, smembers, del, cmd } from '../server/redis.js';
 import { scheduleWindow, cancelAll, ensureTopup, removeTopup } from '../server/scheduler.js';
 
 export default async function handler(req, res) {
+  if (req.method === 'GET') {
+    try {
+      const [treatment, checked] = await Promise.all([getJSON('treatment'), smembers('checked')]);
+      res.setHeader('Cache-Control', 'no-store');
+      return res.status(200).json({ ok: true, treatment, checked });
+    } catch (e) {
+      console.error('treatment get error:', e);
+      return res.status(500).json({ error: e.message });
+    }
+  }
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
   const { treatment, reminders = [], checked = [] } = req.body || {};
 

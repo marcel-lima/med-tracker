@@ -16,14 +16,17 @@ function parseDose(dose = '') {
 const joinDose = (qty, unit) => `${qty.trim()} ${unit.trim()}`.trim();
 
 
-export default function TreatmentEditor({ initial, onSave, onCancel, onEnd }) {
-  const [t, setT] = useState(() => ({
-    ...initial,
-    feedings: [...(initial.feedings || [])],
-    meds: initial.meds.length
-      ? initial.meds.map(m => ({ ...newMed(0), ...m, times: [...m.times], freq: m.freq ?? inferFreq(m.times) }))
-      : [newMed(0)],
-  }));
+export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, startWithNew = false }) {
+  const [t, setT] = useState(() => {
+    const meds = initial.meds.map(m => ({ ...newMed(0), ...m, times: [...m.times], freq: m.freq ?? inferFreq(m.times) }));
+    if (!meds.length) meds.push(newMed(0));
+    else if (startWithNew) {
+      const used = meds.map(m => m.color);
+      const color = COLOR_ORDER.find(c => !used.includes(c)) || COLOR_ORDER[meds.length % COLOR_ORDER.length];
+      meds.push({ ...newMed(meds.length), color });
+    }
+    return { ...initial, feedings: [...(initial.feedings || [])], meds };
+  });
   const [errors, setErrors] = useState([]);
   // { kind: 'feed' | 'med', medId?, index, value } while a time is being edited
   const [picking, setPicking] = useState(null);
@@ -140,7 +143,8 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd }) {
                     aria-expanded={colorOpen === med.id}
                     onClick={() => setColorOpen(colorOpen === med.id ? null : med.id)} />
                   <input className="input flex-1 text-base font-medium" placeholder={`Remédio ${idx + 1}`} value={med.name}
-                         onChange={e => patchMed(med.id, { name: e.target.value })} autoFocus={isNew && idx === 0} />
+                         onChange={e => patchMed(med.id, { name: e.target.value })}
+                         autoFocus={(isNew && idx === 0) || (startWithNew && idx === t.meds.length - 1)} />
                   {t.meds.length > 1 && (
                     <button onClick={() => removeMed(med.id)} className="icon-btn" aria-label="Remover"><Trash2 size={14} /></button>
                   )}

@@ -5,7 +5,7 @@ import {
   COLORS, FEED_ID, buildDays, buildReminders, emptyTreatment, isActive, totalDays, findNextSlot,
   dayProgress, medsForSlot, medById, allMeds, foodNote, formatDate, todayISO, DOW,
 } from './lib/treatment';
-import { saveTreatment, clearTreatment, setChecked as syncChecked } from './lib/api';
+import { saveTreatment, clearTreatment, fetchTreatment, setChecked as syncChecked } from './lib/api';
 import PillClock from './components/PillClock';
 import TreatmentEditor from './components/TreatmentEditor';
 import NotifSheet from './components/NotifSheet';
@@ -23,7 +23,7 @@ export default function App() {
   const [checked, setChecked] = useState(() => storage.get('mt_checked_v2') || {});
   const [selDate, setSelDate] = useState(todayISO());
   const [now, setNow] = useState(new Date());
-  const [showEditor, setShowEditor] = useState(false);
+  const [showEditor, setShowEditor] = useState(false); // false | true | 'new'
   const [showNotif, setShowNotif] = useState(false);
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
@@ -72,6 +72,22 @@ export default function App() {
     clearTimeout(toastTimer.current);
     setToast(msg);
     toastTimer.current = setTimeout(() => setToast(null), 2400);
+  }, []);
+
+  // Fresh device: restore the treatment the server knows about
+  useEffect(() => {
+    if (isActive(treatment) || storage.get('mt_treatment')) return;
+    let alive = true;
+    fetchTreatment().then(data => {
+      if (!alive || !data?.treatment || !isActive(data.treatment)) return;
+      setTreatment(data.treatment);
+      const restored = {};
+      (data.checked || []).forEach(k => { restored[k] = true; });
+      setChecked(restored);
+      showToast('tratamento recuperado');
+    });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ─ Actions ─
@@ -282,13 +298,17 @@ export default function App() {
                   </div>
                 ))}
               </div>
+              <button onClick={() => setShowEditor('new')} className="btn w-full mt-5" style={{ background: 'var(--bg)' }}>
+                <Plus size={14} /> Adicionar remédio
+              </button>
             </div>
           </>
         )}
       </div>
 
       {showEditor && (
-        <TreatmentEditor initial={treatment} onSave={handleSave} onCancel={() => setShowEditor(false)} onEnd={handleEnd} />
+        <TreatmentEditor initial={treatment} startWithNew={showEditor === 'new'}
+                         onSave={handleSave} onCancel={() => setShowEditor(false)} onEnd={handleEnd} />
       )}
 
       <NotifSheet open={showNotif} onClose={() => setShowNotif(false)}
