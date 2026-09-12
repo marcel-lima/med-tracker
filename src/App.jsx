@@ -52,6 +52,16 @@ export default function App() {
     document.documentElement.classList.toggle('dark', dark);
   }, [dark]);
 
+  // Re-sync reminders with the server once a day (keeps continuous meds covered)
+  useEffect(() => {
+    if (!isActive(treatment)) return;
+    const last = Number(storage.get('mt_synced_at')) || 0;
+    if (Date.now() - last < 20 * 3600e3) return;
+    storage.set('mt_synced_at', Date.now());
+    saveTreatment(treatment, buildReminders(treatment), Object.keys(checked));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Clock tick
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 30000);
@@ -81,6 +91,7 @@ export default function App() {
     setTreatment(t);
     setSelDate(todayISO());
     setShowEditor(false);
+    storage.set('mt_synced_at', Date.now());
     saveTreatment(t, buildReminders(t), Object.keys(checked));
     showToast('tratamento salvo');
   };
@@ -206,7 +217,7 @@ export default function App() {
                 <button onClick={() => setSelDate(days[Math.max(0, selIdx - 1)].date)} disabled={selIdx === 0}
                         className="icon-btn disabled:opacity-25" aria-label="Dia anterior"><ChevronLeft size={16} /></button>
                 <div className="flex-1 min-w-0 text-center">
-                  <p className="eyebrow">dia {selIdx + 1} de {days.length}</p>
+                  <p className="eyebrow">{totalDays(treatment) === Infinity ? `dia ${selIdx + 1}` : `dia ${selIdx + 1} de ${days.length}`}</p>
                   <p className="text-sm font-medium">{formatDate(selDay.dateObj)}</p>
                 </div>
                 <button onClick={() => setSelDate(days[Math.min(days.length - 1, selIdx + 1)].date)} disabled={selIdx === days.length - 1}
@@ -258,7 +269,7 @@ export default function App() {
             {/* ── Treatment summary ── */}
             <div className="card mt-6">
               <div className="flex items-center justify-between mb-4">
-                <p className="eyebrow">tratamento · {totalDays(treatment)} dias</p>
+                <p className="eyebrow">tratamento · {totalDays(treatment) === Infinity ? 'contínuo' : `${totalDays(treatment)} dias`}</p>
                 <button onClick={() => setShowEditor(true)} className="text-xs font-medium">editar</button>
               </div>
               <div className="flex flex-col gap-3">

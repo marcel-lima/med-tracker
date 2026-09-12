@@ -3,7 +3,7 @@ import { X, Plus, Trash2, PawPrint } from 'lucide-react';
 import { COLORS, COLOR_ORDER, FREQ_PRESETS, FOOD_OPTIONS, newMed, validate, t2m, effectiveTimes, deriveTimes, inferFreq } from '../lib/treatment';
 import TimePicker from './TimePicker';
 
-const DAY_PRESETS = [3, 5, 7, 10, 14, 30];
+const DAY_PRESETS = [3, 5, 7, 10, 14, 30, 45, 60];
 const QTY_PRESETS = ['½', '1', '1½', '2'];
 const UNITS = ['cp', 'ml', 'mg', 'gotas', 'cáps', 'sachê'];
 
@@ -27,6 +27,7 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd }) {
   const [errors, setErrors] = useState([]);
   // { kind: 'feed' | 'med', medId?, index, value } while a time is being edited
   const [picking, setPicking] = useState(null);
+  const [colorOpen, setColorOpen] = useState(null); // med id with the color row open
   const isNew = initial.meds.length === 0;
 
   const applyPick = (value) => {
@@ -68,7 +69,7 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd }) {
         ...m,
         name: m.name.trim(),
         dose: m.dose.trim(),
-        days: Number(m.days) || 1,
+        days: m.days === '' ? 1 : Math.max(0, Number(m.days) || 0),
         foodMin: Math.max(0, Number(m.foodMin) || 0),
         times: m.food !== 'none' && feedings.length ? effectiveTimes(m, feedings) : [...m.times].sort((a, b) => t2m(a) - t2m(b)),
       })),
@@ -136,13 +137,31 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd }) {
                     className="w-4 h-4 rounded-full flex-shrink-0"
                     style={{ background: c.a, outline: `3px solid ${c.soft}` }}
                     aria-label="Trocar cor"
-                    onClick={() => patchMed(med.id, { color: COLOR_ORDER[(COLOR_ORDER.indexOf(med.color) + 1) % COLOR_ORDER.length] })} />
+                    aria-expanded={colorOpen === med.id}
+                    onClick={() => setColorOpen(colorOpen === med.id ? null : med.id)} />
                   <input className="input flex-1 text-base font-medium" placeholder={`Remédio ${idx + 1}`} value={med.name}
                          onChange={e => patchMed(med.id, { name: e.target.value })} autoFocus={isNew && idx === 0} />
                   {t.meds.length > 1 && (
                     <button onClick={() => removeMed(med.id)} className="icon-btn" aria-label="Remover"><Trash2 size={14} /></button>
                   )}
                 </div>
+
+                {colorOpen === med.id && (
+                  <div className="flex items-center gap-2.5 mb-4 pl-0.5">
+                    {COLOR_ORDER.map(k => {
+                      const cc = COLORS[k];
+                      const on = med.color === k;
+                      return (
+                        <button key={k} aria-label={`Cor ${k}`}
+                                onClick={() => { patchMed(med.id, { color: k }); setColorOpen(null); }}
+                                className="w-7 h-7 rounded-full flex items-center justify-center transition-transform active:scale-90"
+                                style={{ background: cc.a, outline: on ? `3px solid ${cc.soft}` : 'none', transform: on ? 'scale(1.1)' : 'none' }}>
+                          {on && <span className="w-2 h-2 rounded-full" style={{ background: '#fff' }} />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
                 <p className="eyebrow mb-2">dose</p>
                 <DoseField dose={med.dose} onChange={dose => patchMed(med.id, { dose })} id={med.id} />
@@ -233,14 +252,17 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd }) {
                     <button key={d} onClick={() => patchMed(med.id, { days: d })}
                             className={`chip tabular-nums ${Number(med.days) === d ? 'chip-on' : ''}`}>{d}</button>
                   ))}
+                  <button onClick={() => patchMed(med.id, { days: 0 })}
+                          className={`chip ${Number(med.days) === 0 && med.days !== '' ? 'chip-on' : ''}`}>sempre</button>
                   <span className="time-pill">
                     <input
                       id={`days-${med.id}`}
                       inputMode="numeric"
                       aria-label="Dias de tratamento"
-                      value={med.days}
+                      placeholder="nº"
+                      value={Number(med.days) === 0 ? '' : med.days}
                       onChange={e => patchMed(med.id, { days: e.target.value.replace(/\D/g, '').slice(0, 3) })}
-                      onBlur={() => patchMed(med.id, { days: Math.min(365, Math.max(1, Number(med.days) || 1)) })}
+                      onBlur={() => patchMed(med.id, { days: med.days === '' ? 0 : Math.min(365, Math.max(1, Number(med.days) || 1)) })}
                       style={{ width: 40, textAlign: 'center' }} />
                     <span style={{ color: 'var(--muted)' }}>dias</span>
                   </span>

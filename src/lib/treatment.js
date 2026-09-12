@@ -8,6 +8,8 @@
 // }
 // When med.food !== 'none', med.times are derived from feedings (± foodMin).
 // Meals show up as a virtual "med" (FEED_ID) so they get a slot, a check and a reminder.
+// med.days === 0 means continuous ("sempre"): doses are generated up to
+// HORIZON_DAYS ahead of today and the app re-syncs the server daily.
 // A "dose" is one med at one date+time. Key: `${date}|${time}|${medId}`.
 
 export const COLORS = {
@@ -38,6 +40,7 @@ export const FREQ_PRESETS = [
   { label: '6/6h',      hours: 6 },
 ];
 
+export const HORIZON_DAYS = 60;
 export const DOW = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 export const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
@@ -84,7 +87,8 @@ export function allMeds(t) {
   const feedings = t.feedings || [];
   const meds = t.meds.map(m => ({ ...m, times: effectiveTimes(m, feedings) }));
   if (feedings.length) {
-    meds.push({ id: FEED_ID, name: FEED_NAME, dose: '', times: [...feedings].sort((a, b) => t2m(a) - t2m(b)), days: totalDays(t), color: 'feed', food: 'none', foodMin: 0 });
+    const td = totalDays(t);
+    meds.push({ id: FEED_ID, name: FEED_NAME, dose: '', times: [...feedings].sort((a, b) => t2m(a) - t2m(b)), days: td === Infinity ? 0 : td, color: 'feed', food: 'none', foodMin: 0 });
   }
   return meds;
 }
@@ -116,9 +120,20 @@ export function isActive(t) {
   return !!t && Array.isArray(t.meds) && t.meds.length > 0;
 }
 
+export const isForever = med => Number(med.days) === 0;
+
+// Longest med duration in days; Infinity when any med is continuous.
 export function totalDays(t) {
   if (!isActive(t)) return 0;
+  if (t.meds.some(isForever)) return Infinity;
   return Math.max(...t.meds.map(m => Number(m.days) || 1));
+}
+
+// Number of days to generate for a med: its own, or up to the horizon.
+function spanDays(med, start) {
+  if (!isForever(med)) return Math.max(1, Number(med.days) || 1);
+  const end = new Date(); end.setDate(end.getDate() + HORIZON_DAYS);
+  return Math.max(1, Math.round((end - start) / 86400000) + 1);
 }
 
 export function doseKey(date, time, medId) { return `${date}|${time}|${medId}`; }
@@ -138,7 +153,7 @@ export function buildDoses(t) {
   const start = fromISODate(t.startDate);
   const out = [];
   allMeds(t).forEach(med => {
-    const days = Math.max(1, Number(med.days) || 1);
+    const days = spanDays(med, start);
     for (let i = 0; i < days; i++) {
       const d = new Date(start); d.setDate(d.getDate() + i);
       const date = toISODate(d);
@@ -237,7 +252,7 @@ export function validate(t) {
     const relative = m.food && m.food !== 'none';
     if (relative && !(t.feedings || []).length) errs.push(`${m.name || `Remédio ${i + 1}`}: defina os horários da ração para usar "${m.food === 'with' ? 'junto' : m.food === 'before' ? 'antes' : 'depois'}".`);
     if (!relative && !m.times.length) errs.push(`${m.name || `Remédio ${i + 1}`}: escolha pelo menos um horário.`);
-    if (!(Number(m.days) >= 1)) errs.push(`${m.name || `Remédio ${i + 1}`}: duração precisa ser 1 dia ou mais.`);
+    if (!(Number(m.days) >= 0)) errs.push(`${m.name || `Remédio ${i + 1}`}: duração precisa ser 1 dia ou mais, ou "sempre".`);
   });
   return errs;
 }
