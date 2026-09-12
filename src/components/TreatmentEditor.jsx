@@ -1,18 +1,17 @@
 import { useState } from 'react';
 import { X, Plus, Trash2, PawPrint } from 'lucide-react';
-import { COLORS, COLOR_ORDER, FREQ_PRESETS, FOOD_OPTIONS, newMed, validate, t2m, effectiveTimes } from '../lib/treatment';
+import { COLORS, COLOR_ORDER, FREQ_PRESETS, FOOD_OPTIONS, newMed, validate, t2m, effectiveTimes, deriveTimes, inferFreq } from '../lib/treatment';
 import TimePicker from './TimePicker';
 
 const DAY_PRESETS = [3, 5, 7, 10, 14, 30];
 
-const sameTimes = (a, b) => a.length === b.length && [...a].sort().every((t, i) => t === [...b].sort()[i]);
 
 export default function TreatmentEditor({ initial, onSave, onCancel, onEnd }) {
   const [t, setT] = useState(() => ({
     ...initial,
     feedings: [...(initial.feedings || [])],
     meds: initial.meds.length
-      ? initial.meds.map(m => ({ ...newMed(0), ...m, times: [...m.times] }))
+      ? initial.meds.map(m => ({ ...newMed(0), ...m, times: [...m.times], freq: m.freq ?? inferFreq(m.times) }))
       : [newMed(0)],
   }));
   const [errors, setErrors] = useState([]);
@@ -31,6 +30,7 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd }) {
     } else {
       setT(prev => ({ ...prev, meds: prev.meds.map(m => {
         if (m.id !== picking.medId) return m;
+        if (m.freq !== 'custom') return { ...m, times: deriveTimes(value, m.freq) };
         const times = [...m.times];
         if (picking.index === -1) times.push(value); else times[picking.index] = value;
         return { ...m, times: [...new Set(times)] };
@@ -177,15 +177,27 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd }) {
                 {med.food === 'none' && (<>
                 <p className="eyebrow mb-2">frequência</p>
                 <div className="flex flex-wrap gap-1.5 mb-4">
-                  {FREQ_PRESETS.map(p => {
-                    const active = sameTimes(p.times, med.times);
-                    return (
-                      <button key={p.label} onClick={() => patchMed(med.id, { times: [...p.times] })}
-                              className={`chip ${active ? 'chip-on' : ''}`}>{p.label}</button>
-                    );
-                  })}
+                  {FREQ_PRESETS.map(p => (
+                    <button key={p.label}
+                            onClick={() => patchMed(med.id, { freq: p.hours, times: deriveTimes(med.times[0] || '08:00', p.hours) })}
+                            className={`chip ${med.freq === p.hours ? 'chip-on' : ''}`}>{p.label}</button>
+                  ))}
+                  <button onClick={() => patchMed(med.id, { freq: 'custom' })}
+                          className={`chip ${med.freq === 'custom' ? 'chip-on' : ''}`}>outros horários</button>
                 </div>
 
+                {med.freq !== 'custom' ? (
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                      <p className="eyebrow mb-1">primeira dose</p>
+                      <p className="text-xs tabular-nums" style={{ color: 'var(--muted)' }}>{med.times.join(' · ')}</p>
+                    </div>
+                    <button className="chip tabular-nums"
+                            onClick={() => setPicking({ kind: 'med', medId: med.id, index: 0, value: med.times[0] || '08:00' })}>
+                      {med.times[0] || '08:00'}
+                    </button>
+                  </div>
+                ) : (<>
                 <p className="eyebrow mb-2">horários</p>
                 <div className="flex flex-wrap gap-1.5 mb-4">
                   {[...med.times].sort((a, b) => t2m(a) - t2m(b)).map((time) => {
@@ -202,6 +214,7 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd }) {
                     <Plus size={12} /> horário
                   </button>
                 </div>
+                </>)}
                 </>)}
 
                 <p className="eyebrow mb-2">duração</p>

@@ -29,11 +29,13 @@ export const FOOD_OPTIONS = [
 ];
 export const COLOR_ORDER = ['red', 'blue', 'yellow', 'orange', 'green', 'purple'];
 
+// Frequency is a rule: an interval in hours from the first dose.
+// 'custom' means a free list of times.
 export const FREQ_PRESETS = [
-  { label: '1× ao dia', times: ['08:00'] },
-  { label: '12/12h',    times: ['08:00', '20:00'] },
-  { label: '8/8h',      times: ['06:00', '14:00', '22:00'] },
-  { label: '6/6h',      times: ['06:00', '12:00', '18:00', '00:00'] },
+  { label: '1× ao dia', hours: 24 },
+  { label: '12/12h',    hours: 12 },
+  { label: '8/8h',      hours: 8 },
+  { label: '6/6h',      hours: 6 },
 ];
 
 export const DOW = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
@@ -46,6 +48,22 @@ export const todayISO = () => toISODate(new Date());
 export const t2m = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
 export const uid = () => Math.random().toString(36).slice(2, 9);
 export const m2t = m => { const x = ((m % 1440) + 1440) % 1440; return `${String(Math.floor(x / 60)).padStart(2, '0')}:${String(x % 60).padStart(2, '0')}`; };
+
+// Times for a first dose repeated every `hours` (24 → once a day).
+export function deriveTimes(first, hours) {
+  const count = Math.max(1, Math.round(24 / hours));
+  const out = [];
+  for (let k = 0; k < count; k++) out.push(m2t(t2m(first) + k * hours * 60));
+  return [...new Set(out)].sort((a, b) => t2m(a) - t2m(b));
+}
+
+// Guess the interval behind an existing time list (or 'custom').
+export function inferFreq(times) {
+  for (const p of FREQ_PRESETS) {
+    if (times.length && deriveTimes(times[0], p.hours).join() === [...times].sort((a, b) => t2m(a) - t2m(b)).join()) return p.hours;
+  }
+  return 'custom';
+}
 
 // Times a med is actually given: its own, or derived from the meal times.
 export function effectiveTimes(med, feedings = []) {
@@ -76,6 +94,7 @@ export function newMed(index = 0) {
     id: uid(),
     name: '',
     dose: '',
+    freq: 12,               // hours between doses, or 'custom'
     times: ['08:00', '20:00'],
     days: 7,
     color: COLOR_ORDER[index % COLOR_ORDER.length],
