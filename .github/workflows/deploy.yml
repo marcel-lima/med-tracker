@@ -1,0 +1,40 @@
+# Publica na Vercel a cada push na main, sem depender da integração GitHub↔Vercel.
+# Segredos necessários (repositório → Settings → Secrets and variables → Actions):
+#   VERCEL_TOKEN       vercel.com → Account Settings → Tokens → Create
+#   VERCEL_ORG_ID      Projeto → Settings → General → "Team ID" (ou "Vercel ID")
+#   VERCEL_PROJECT_ID  Projeto → Settings → General → "Project ID"
+name: Deploy na Vercel
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Baixar configuração do projeto
+        run: vercel pull --yes --environment=production --token="${{ secrets.VERCEL_TOKEN }}"
+
+      - name: Build
+        run: vercel build --prod --token="${{ secrets.VERCEL_TOKEN }}"
+
+      - name: Deploy
+        run: vercel deploy --prebuilt --prod --token="${{ secrets.VERCEL_TOKEN }}"
