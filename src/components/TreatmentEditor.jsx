@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { X, Plus, Trash2, Minus, PawPrint } from 'lucide-react';
+import { X, Plus, Trash2, PawPrint } from 'lucide-react';
 import { COLORS, COLOR_ORDER, FREQ_PRESETS, FOOD_OPTIONS, newMed, validate, t2m, effectiveTimes } from '../lib/treatment';
+import TimePicker from './TimePicker';
+
+const DAY_PRESETS = [3, 5, 7, 10, 14, 30];
 
 const sameTimes = (a, b) => a.length === b.length && [...a].sort().every((t, i) => t === [...b].sort()[i]);
 
@@ -13,7 +16,27 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd }) {
       : [newMed(0)],
   }));
   const [errors, setErrors] = useState([]);
+  // { kind: 'feed' | 'med', medId?, index, value } while a time is being edited
+  const [picking, setPicking] = useState(null);
   const isNew = initial.meds.length === 0;
+
+  const applyPick = (value) => {
+    if (!picking) return;
+    if (picking.kind === 'feed') {
+      setT(prev => {
+        const feedings = [...prev.feedings];
+        if (picking.index === -1) feedings.push(value); else feedings[picking.index] = value;
+        return { ...prev, feedings: [...new Set(feedings)] };
+      });
+    } else {
+      setT(prev => ({ ...prev, meds: prev.meds.map(m => {
+        if (m.id !== picking.medId) return m;
+        const times = [...m.times];
+        if (picking.index === -1) times.push(value); else times[picking.index] = value;
+        return { ...m, times: [...new Set(times)] };
+      }) }));
+    }
+  };
 
   const patchMed = (id, patch) =>
     setT(prev => ({ ...prev, meds: prev.meds.map(m => (m.id === id ? { ...m, ...patch } : m)) }));
@@ -76,19 +99,17 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd }) {
             Opcional. Com os horários da ração você pode marcar um remédio como antes, junto ou depois de comer.
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {[...t.feedings].sort((a, b) => t2m(a) - t2m(b)).map((time, i) => (
-              <span key={`${time}-${i}`} className="time-pill">
-                <input type="time" value={time}
-                       onChange={e => {
-                         const v = e.target.value; if (!v) return;
-                         const feedings = [...t.feedings]; feedings[t.feedings.indexOf(time)] = v;
-                         setT(prev => ({ ...prev, feedings }));
-                       }} />
-                <button onClick={() => setT(prev => ({ ...prev, feedings: prev.feedings.filter((_, j) => j !== prev.feedings.indexOf(time)) }))}
-                        aria-label="Remover horário da ração"><X size={12} /></button>
-              </span>
-            ))}
-            <button className="chip" onClick={() => setT(prev => ({ ...prev, feedings: [...prev.feedings, prev.feedings.length ? '20:00' : '08:00'] }))}>
+            {[...t.feedings].sort((a, b) => t2m(a) - t2m(b)).map((time) => {
+              const index = t.feedings.indexOf(time);
+              return (
+                <span key={time} className="time-pill">
+                  <button className="tabular-nums" onClick={() => setPicking({ kind: 'feed', index, value: time })}>{time}</button>
+                  <button onClick={() => setT(prev => ({ ...prev, feedings: prev.feedings.filter((_, j) => j !== index) }))}
+                          aria-label="Remover horário da ração"><X size={12} /></button>
+                </span>
+              );
+            })}
+            <button className="chip" onClick={() => setPicking({ kind: 'feed', index: -1, value: t.feedings.length ? '20:00' : '08:00' })}>
               <Plus size={12} /> horário da ração
             </button>
           </div>
@@ -124,12 +145,24 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd }) {
                   ))}
                 </div>
                 {(med.food === 'before' || med.food === 'after') && (
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs" style={{ color: 'var(--muted)' }}>quanto tempo {med.food === 'before' ? 'antes' : 'depois'}</span>
-                    <div className="flex items-center gap-2">
-                      <button className="icon-btn" onClick={() => patchMed(med.id, { foodMin: Math.max(5, Number(med.foodMin) - 5) })} aria-label="Menos 5 min"><Minus size={14} /></button>
-                      <span className="text-sm tabular-nums w-16 text-center">{med.foodMin} min</span>
-                      <button className="icon-btn" onClick={() => patchMed(med.id, { foodMin: Math.min(240, Number(med.foodMin) + 5) })} aria-label="Mais 5 min"><Plus size={14} /></button>
+                  <div className="mb-2">
+                    <p className="text-xs mb-1.5" style={{ color: 'var(--muted)' }}>quanto tempo {med.food === 'before' ? 'antes' : 'depois'}</p>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {[15, 30, 45, 60, 120].map(v => (
+                        <button key={v} onClick={() => patchMed(med.id, { foodMin: v })}
+                                className={`chip tabular-nums ${Number(med.foodMin) === v ? 'chip-on' : ''}`}>{v} min</button>
+                      ))}
+                      <span className="time-pill">
+                        <input
+                          id={`foodmin-${med.id}`}
+                          inputMode="numeric"
+                          aria-label="Minutos"
+                          value={med.foodMin}
+                          onChange={e => patchMed(med.id, { foodMin: e.target.value.replace(/\D/g, '').slice(0, 3) })}
+                          onBlur={() => patchMed(med.id, { foodMin: Math.min(240, Math.max(1, Number(med.foodMin) || 30)) })}
+                          style={{ width: 40, textAlign: 'center' }} />
+                        <span style={{ color: 'var(--muted)' }}>min</span>
+                      </span>
                     </div>
                   </div>
                 )}
@@ -155,31 +188,39 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd }) {
 
                 <p className="eyebrow mb-2">horários</p>
                 <div className="flex flex-wrap gap-1.5 mb-4">
-                  {[...med.times].sort((a, b) => t2m(a) - t2m(b)).map((time, i) => (
-                    <span key={`${time}-${i}`} className="time-pill">
-                      <input type="time" value={time}
-                             onChange={e => {
-                               const v = e.target.value; if (!v) return;
-                               const times = [...med.times]; times[med.times.indexOf(time)] = v;
-                               patchMed(med.id, { times });
-                             }} />
-                      <button onClick={() => patchMed(med.id, { times: med.times.filter((_, j) => j !== med.times.indexOf(time)) })}
-                              aria-label="Remover horário"><X size={12} /></button>
-                    </span>
-                  ))}
-                  <button className="chip" onClick={() => patchMed(med.id, { times: [...med.times, '12:00'] })}>
+                  {[...med.times].sort((a, b) => t2m(a) - t2m(b)).map((time) => {
+                    const index = med.times.indexOf(time);
+                    return (
+                      <span key={time} className="time-pill">
+                        <button className="tabular-nums" onClick={() => setPicking({ kind: 'med', medId: med.id, index, value: time })}>{time}</button>
+                        <button onClick={() => patchMed(med.id, { times: med.times.filter((_, j) => j !== index) })}
+                                aria-label="Remover horário"><X size={12} /></button>
+                      </span>
+                    );
+                  })}
+                  <button className="chip" onClick={() => setPicking({ kind: 'med', medId: med.id, index: -1, value: '12:00' })}>
                     <Plus size={12} /> horário
                   </button>
                 </div>
                 </>)}
 
-                <div className="flex items-center justify-between">
-                  <p className="eyebrow">duração</p>
-                  <div className="flex items-center gap-2">
-                    <button className="icon-btn" onClick={() => patchMed(med.id, { days: Math.max(1, Number(med.days) - 1) })} aria-label="Menos um dia"><Minus size={14} /></button>
-                    <span className="text-sm tabular-nums w-16 text-center">{med.days} {Number(med.days) === 1 ? 'dia' : 'dias'}</span>
-                    <button className="icon-btn" onClick={() => patchMed(med.id, { days: Math.min(365, Number(med.days) + 1) })} aria-label="Mais um dia"><Plus size={14} /></button>
-                  </div>
+                <p className="eyebrow mb-2">duração</p>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {DAY_PRESETS.map(d => (
+                    <button key={d} onClick={() => patchMed(med.id, { days: d })}
+                            className={`chip tabular-nums ${Number(med.days) === d ? 'chip-on' : ''}`}>{d}</button>
+                  ))}
+                  <span className="time-pill">
+                    <input
+                      id={`days-${med.id}`}
+                      inputMode="numeric"
+                      aria-label="Dias de tratamento"
+                      value={med.days}
+                      onChange={e => patchMed(med.id, { days: e.target.value.replace(/\D/g, '').slice(0, 3) })}
+                      onBlur={() => patchMed(med.id, { days: Math.min(365, Math.max(1, Number(med.days) || 1)) })}
+                      style={{ width: 40, textAlign: 'center' }} />
+                    <span style={{ color: 'var(--muted)' }}>dias</span>
+                  </span>
                 </div>
               </section>
             );
@@ -201,6 +242,14 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd }) {
           </button>
         )}
       </div>
+
+      {picking && (
+        <TimePicker
+          value={picking.value}
+          title={picking.kind === 'feed' ? 'Horário da ração' : 'Horário do remédio'}
+          onChange={applyPick}
+          onClose={() => setPicking(null)} />
+      )}
 
       <div className="sheet-footer">
         <div className="max-w-lg mx-auto px-5 flex gap-2">
