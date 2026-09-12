@@ -4,6 +4,16 @@ import { COLORS, COLOR_ORDER, FREQ_PRESETS, FOOD_OPTIONS, newMed, validate, t2m,
 import TimePicker from './TimePicker';
 
 const DAY_PRESETS = [3, 5, 7, 10, 14, 30];
+const QTY_PRESETS = ['½', '1', '1½', '2'];
+const UNITS = ['cp', 'ml', 'mg', 'gotas', 'cáps', 'sachê'];
+
+// "1 cp" ⇄ { qty: '1', unit: 'cp' }
+function parseDose(dose = '') {
+  const m = dose.trim().match(/^(\S+)\s+(.+)$/);
+  if (m) return { qty: m[1], unit: m[2] };
+  return { qty: dose.trim(), unit: '' };
+}
+const joinDose = (qty, unit) => `${qty.trim()} ${unit.trim()}`.trim();
 
 
 export default function TreatmentEditor({ initial, onSave, onCancel, onEnd }) {
@@ -134,8 +144,8 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd }) {
                   )}
                 </div>
 
-                <input className="input w-full mb-4" placeholder="Dose · ex: 1 cp, 1 g, 10 ml" value={med.dose}
-                       onChange={e => patchMed(med.id, { dose: e.target.value })} />
+                <p className="eyebrow mb-2">dose</p>
+                <DoseField dose={med.dose} onChange={dose => patchMed(med.id, { dose })} id={med.id} />
 
                 <p className="eyebrow mb-2">em relação à ração</p>
                 <div className="flex flex-wrap gap-1.5 mb-2">
@@ -269,6 +279,54 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd }) {
           <button onClick={onCancel} className="btn flex-1">Cancelar</button>
           <button onClick={save} className="btn btn-primary flex-[2]">Salvar</button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+
+function DoseField({ dose, onChange, id }) {
+  const { qty, unit } = parseDose(dose);
+  const customUnit = unit !== '' && !UNITS.includes(unit);
+  const [otherOpen, setOtherOpen] = useState(customUnit);
+  return (
+    <div className="mb-4">
+      <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+        {QTY_PRESETS.map(q => (
+          <button key={q} onClick={() => onChange(joinDose(q, unit))}
+                  className={`chip tabular-nums ${qty === q ? 'chip-on' : ''}`}>{q}</button>
+        ))}
+        <span className="time-pill">
+          <input
+            id={`qty-${id}`}
+            inputMode="decimal"
+            aria-label="Quantidade"
+            placeholder="qtd"
+            value={QTY_PRESETS.includes(qty) ? '' : qty}
+            onChange={e => onChange(joinDose(e.target.value, unit))}
+            style={{ width: 48, textAlign: 'center' }} />
+        </span>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {UNITS.map(u => (
+          <button key={u} onClick={() => { setOtherOpen(false); onChange(joinDose(qty, u)); }}
+                  className={`chip ${unit === u ? 'chip-on' : ''}`}>{u}</button>
+        ))}
+        {otherOpen ? (
+          <span className="time-pill">
+            <input
+              id={`unit-${id}`}
+              aria-label="Unidade"
+              placeholder="unidade"
+              autoFocus
+              value={customUnit ? unit : ''}
+              onChange={e => onChange(joinDose(qty, e.target.value))}
+              style={{ width: 80 }} />
+          </span>
+        ) : (
+          <button onClick={() => { setOtherOpen(true); onChange(joinDose(qty, '')); }}
+                  className={`chip ${customUnit ? 'chip-on' : ''}`}>outra</button>
+        )}
       </div>
     </div>
   );
