@@ -18,8 +18,8 @@ async function call(path, body) {
 
 // Replace the treatment on the server and (re)schedule every reminder.
 // `reminders` comes from buildReminders(): [{ key, at, title, body, doseKeys }]
-export function saveTreatment(treatment, reminders) {
-  return call('/api/treatment', { treatment, reminders });
+export function saveTreatment(treatment, reminders, checked = []) {
+  return call('/api/treatment', { treatment, reminders, checked });
 }
 
 // Clear the treatment and cancel every scheduled reminder.

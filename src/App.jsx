@@ -80,7 +80,7 @@ export default function App() {
     setTreatment(t);
     setSelDate(todayISO());
     setShowEditor(false);
-    saveTreatment(t, buildReminders(t));
+    saveTreatment(t, buildReminders(t), Object.keys(checked));
     showToast('tratamento salvo');
   };
 
@@ -94,7 +94,7 @@ export default function App() {
   const handleReminders = (reminders) => {
     const t = { ...treatment, reminders };
     setTreatment(t);
-    if (isActive(t)) saveTreatment(t, buildReminders(t));
+    if (isActive(t)) saveTreatment(t, buildReminders(t), Object.keys(checked));
   };
 
   // ─ Derived text ─
