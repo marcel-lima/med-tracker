@@ -1,9 +1,13 @@
 // ─── Treatment model ─────────────────────────────────────────────────────────
 // treatment = {
 //   startDate: 'YYYY-MM-DD',
-//   meds: [{ id, name, dose, times: ['08:00', '20:00'], days: 7, color: 'red' }],
+//   feedings: ['08:00', '20:00'],                 // meal times (optional)
+//   meds: [{ id, name, dose, times: ['08:00', '20:00'], days: 7, color: 'red',
+//            food: 'none' | 'before' | 'with' | 'after', foodMin: 30 }],
 //   reminders: { offsetMin: 0, repeatMin: 30 },   // 0 = off
 // }
+// When med.food !== 'none', med.times are derived from feedings (± foodMin).
+// Meals show up as a virtual "med" (FEED_ID) so they get a slot, a check and a reminder.
 // A "dose" is one med at one date+time. Key: `${date}|${time}|${medId}`.
 
 export const COLORS = {
@@ -13,7 +17,16 @@ export const COLORS = {
   orange: { a: '#F5822B', b: '#D66512', ink: '#6E3408', soft: '#FFE8D6' },
   green:  { a: '#3DBF7A', b: '#2A9A5F', ink: '#155C36', soft: '#DFF5E8' },
   purple: { a: '#9B6BE0', b: '#7A4BC4', ink: '#41256E', soft: '#EEE4FB' },
+  feed:   { a: '#C9A27E', b: '#A8825F', ink: '#5A3E22', soft: '#F3E8DB' },
 };
+export const FEED_ID = '__feed';
+export const FEED_NAME = 'Ração';
+export const FOOD_OPTIONS = [
+  { value: 'none',   label: 'não depende' },
+  { value: 'before', label: 'antes' },
+  { value: 'with',   label: 'junto' },
+  { value: 'after',  label: 'depois' },
+];
 export const COLOR_ORDER = ['red', 'blue', 'yellow', 'orange', 'green', 'purple'];
 
 export const FREQ_PRESETS = [
@@ -32,6 +45,31 @@ export const fromISODate = s => { const [y, m, d] = s.split('-').map(Number); re
 export const todayISO = () => toISODate(new Date());
 export const t2m = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
 export const uid = () => Math.random().toString(36).slice(2, 9);
+export const m2t = m => { const x = ((m % 1440) + 1440) % 1440; return `${String(Math.floor(x / 60)).padStart(2, '0')}:${String(x % 60).padStart(2, '0')}`; };
+
+// Times a med is actually given: its own, or derived from the meal times.
+export function effectiveTimes(med, feedings = []) {
+  if (!med.food || med.food === 'none' || !feedings.length) return [...med.times];
+  const shift = med.food === 'before' ? -(Number(med.foodMin) || 0) : med.food === 'after' ? (Number(med.foodMin) || 0) : 0;
+  return [...new Set(feedings.map(f => m2t(t2m(f) + shift)))].sort((a, b) => t2m(a) - t2m(b));
+}
+
+export function foodNote(med) {
+  if (!med.food || med.food === 'none') return null;
+  if (med.food === 'with') return 'junto com a ração';
+  return `${med.foodMin} min ${med.food === 'before' ? 'antes' : 'depois'} da ração`;
+}
+
+// Real meds + the virtual meal "med", all with effective times.
+export function allMeds(t) {
+  if (!isActive(t)) return [];
+  const feedings = t.feedings || [];
+  const meds = t.meds.map(m => ({ ...m, times: effectiveTimes(m, feedings) }));
+  if (feedings.length) {
+    meds.push({ id: FEED_ID, name: FEED_NAME, dose: '', times: [...feedings].sort((a, b) => t2m(a) - t2m(b)), days: totalDays(t), color: 'feed', food: 'none', foodMin: 0 });
+  }
+  return meds;
+}
 
 export function newMed(index = 0) {
   return {
@@ -41,12 +79,15 @@ export function newMed(index = 0) {
     times: ['08:00', '20:00'],
     days: 7,
     color: COLOR_ORDER[index % COLOR_ORDER.length],
+    food: 'none',
+    foodMin: 30,
   };
 }
 
 export function emptyTreatment() {
   return {
     startDate: todayISO(),
+    feedings: [],
     meds: [],
     reminders: { offsetMin: 0, repeatMin: 30 },
   };
@@ -77,7 +118,7 @@ export function buildDoses(t) {
   if (!isActive(t)) return [];
   const start = fromISODate(t.startDate);
   const out = [];
-  t.meds.forEach(med => {
+  allMeds(t).forEach(med => {
     const days = Math.max(1, Number(med.days) || 1);
     for (let i = 0; i < days; i++) {
       const d = new Date(start); d.setDate(d.getDate() + i);
@@ -113,6 +154,7 @@ export function buildDays(t) {
 }
 
 export function medById(t, id) {
+  if (id === FEED_ID) return allMeds(t).find(m => m.id === FEED_ID) || null;
   return t?.meds?.find(m => m.id === id) || null;
 }
 
@@ -152,10 +194,13 @@ export function buildReminders(t) {
   const days = buildDays(t);
   const out = [];
   days.forEach(day => day.slots.forEach(slot => {
-    const names = medsForSlot(t, slot).map(m => m.name).join(', ');
+    const meds = medsForSlot(t, slot);
+    const names = meds.map(m => m.name).join(', ');
+    const mealOnly = meds.length > 0 && meds.every(m => m.id === FEED_ID);
+    const what = mealOnly ? 'Hora da ração' : 'Hora do remédio';
     const base = slot.doses[0].at.getTime() + offsetMin * 60000;
     const doseKeys = slot.doses.map(d => d.key);
-    out.push({ key: `${slot.key}|1`, at: base, title: `Hora do remédio · ${slot.time}`, body: names, doseKeys });
+    out.push({ key: `${slot.key}|1`, at: base, title: `${what} · ${slot.time}`, body: names, doseKeys });
     if (repeatMin > 0) {
       out.push({ key: `${slot.key}|2`, at: base + repeatMin * 60000, title: `Ainda não tomou? · ${slot.time}`, body: names, doseKeys });
     }
@@ -170,7 +215,9 @@ export function validate(t) {
   if (!t.meds.length) errs.push('Adicione pelo menos um remédio.');
   t.meds.forEach((m, i) => {
     if (!m.name.trim()) errs.push(`Remédio ${i + 1}: falta o nome.`);
-    if (!m.times.length) errs.push(`${m.name || `Remédio ${i + 1}`}: escolha pelo menos um horário.`);
+    const relative = m.food && m.food !== 'none';
+    if (relative && !(t.feedings || []).length) errs.push(`${m.name || `Remédio ${i + 1}`}: defina os horários da ração para usar "${m.food === 'with' ? 'junto' : m.food === 'before' ? 'antes' : 'depois'}".`);
+    if (!relative && !m.times.length) errs.push(`${m.name || `Remédio ${i + 1}`}: escolha pelo menos um horário.`);
     if (!(Number(m.days) >= 1)) errs.push(`${m.name || `Remédio ${i + 1}`}: duração precisa ser 1 dia ou mais.`);
   });
   return errs;

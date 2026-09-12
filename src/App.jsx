@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Check, Sun, Moon, Bell, Pencil, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Sun, Moon, Bell, Pencil, Plus, PawPrint } from 'lucide-react';
 import { storage } from './lib/storage';
 import {
-  COLORS, buildDays, buildReminders, emptyTreatment, isActive, totalDays, findNextSlot,
-  dayProgress, medsForSlot, medById, formatDate, todayISO, DOW,
+  COLORS, FEED_ID, buildDays, buildReminders, emptyTreatment, isActive, totalDays, findNextSlot,
+  dayProgress, medsForSlot, medById, allMeds, foodNote, formatDate, todayISO, DOW,
 } from './lib/treatment';
 import { saveTreatment, clearTreatment, setChecked as syncChecked } from './lib/api';
 import PillClock from './components/PillClock';
@@ -30,6 +30,7 @@ export default function App() {
 
   const active = isActive(treatment);
   const days = useMemo(() => buildDays(treatment), [treatment]);
+  const meds = useMemo(() => allMeds(treatment), [treatment]);
   const today = todayISO();
   const todayDay = days.find(d => d.date === today) || null;
   const selIdx = useMemo(() => {
@@ -136,7 +137,7 @@ export default function App() {
 
         {/* ── Clock ── */}
         <div className="mb-5">
-          <PillClock meds={treatment.meds} today={todayDay} checked={checked}
+          <PillClock meds={meds} today={todayDay} checked={checked}
                      target={nextSlot?.slot.time || null} now={now} dark={dark} />
         </div>
 
@@ -160,8 +161,10 @@ export default function App() {
                   <div className="text-[3.5rem] leading-none font-semibold tracking-tight tabular-nums mb-2">{nextSlot.slot.time}</div>
                   <div className="flex flex-wrap justify-center gap-1.5">
                     {nextMeds.map(m => (
-                      <span key={m.id} className="text-xs px-2.5 py-1 rounded-full font-medium"
-                            style={{ background: COLORS[m.color].soft, color: COLORS[m.color].ink }}>{m.name}</span>
+                      <span key={m.id} className="text-xs px-2.5 py-1 rounded-full font-medium inline-flex items-center gap-1"
+                            style={{ background: COLORS[m.color].soft, color: COLORS[m.color].ink }}>
+                        {m.id === FEED_ID && <PawPrint size={11} />}{m.name}
+                      </span>
                     ))}
                   </div>
                 </>
@@ -235,8 +238,13 @@ export default function App() {
                             <span className="check" style={{ background: on ? c.a : undefined, borderColor: on ? c.a : undefined }}>
                               {on && <Check size={13} color="#fff" strokeWidth={3} />}
                             </span>
-                            <span className="flex-1 text-sm font-medium truncate"
-                                  style={{ textDecoration: on ? 'line-through' : 'none', opacity: on ? 0.45 : 1 }}>{med.name}</span>
+                            <span className="flex-1 min-w-0" style={{ opacity: on ? 0.45 : 1 }}>
+                              <span className="text-sm font-medium truncate flex items-center gap-1.5"
+                                    style={{ textDecoration: on ? 'line-through' : 'none' }}>
+                                {med.id === FEED_ID && <PawPrint size={13} style={{ color: c.a }} />}{med.name}
+                              </span>
+                              {foodNote(med) && <span className="block text-[11px]" style={{ color: 'var(--muted)' }}>{foodNote(med)}</span>}
+                            </span>
                             <span className="text-xs flex-shrink-0" style={{ color: 'var(--muted)' }}>{med.dose}</span>
                           </button>
                         );
@@ -254,11 +262,11 @@ export default function App() {
                 <button onClick={() => setShowEditor(true)} className="text-xs font-medium">editar</button>
               </div>
               <div className="flex flex-col gap-3">
-                {treatment.meds.map(m => (
+                {meds.map(m => (
                   <div key={m.id} className="flex items-center gap-3">
                     <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: COLORS[m.color].a }} />
                     <span className="text-sm font-medium flex-1 truncate">{m.name}</span>
-                    <span className="text-xs" style={{ color: 'var(--muted)' }}>{m.dose}</span>
+                    <span className="text-xs" style={{ color: 'var(--muted)' }}>{m.id === FEED_ID ? '' : m.dose || foodNote(m) || ''}</span>
                     <span className="text-[11px] tabular-nums" style={{ color: 'var(--muted)' }}>{m.times.join(' · ')}</span>
                   </div>
                 ))}
