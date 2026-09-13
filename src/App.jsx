@@ -74,17 +74,24 @@ export default function App() {
     toastTimer.current = setTimeout(() => setToast(null), 2400);
   }, []);
 
-  // Fresh device: restore the treatment the server knows about
+  // On every open, compare with the server and keep whichever is newer.
+  // Covers a reinstalled app (empty storage) and edits made on another device.
   useEffect(() => {
-    if (isActive(treatment) || storage.get('mt_treatment')) return;
     let alive = true;
     fetchTreatment().then(data => {
       if (!alive || !data?.treatment || !isActive(data.treatment)) return;
-      setTreatment(data.treatment);
-      const restored = {};
-      (data.checked || []).forEach(k => { restored[k] = true; });
-      setChecked(restored);
-      showToast('tratamento recuperado');
+      const serverAt = Number(data.treatment.updatedAt) || 0;
+      setTreatment(local => {
+        const localAt = Number(local.updatedAt) || 0;
+        if (isActive(local) && localAt >= serverAt) return local;
+        showToast(isActive(local) ? 'tratamento atualizado' : 'tratamento recuperado');
+        return data.treatment;
+      });
+      setChecked(local => {
+        const merged = { ...local };
+        (data.checked || []).forEach(k => { merged[k] = true; });
+        return merged;
+      });
     });
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,7 +110,8 @@ export default function App() {
     });
   }, [showToast]);
 
-  const handleSave = (t) => {
+  const handleSave = (raw) => {
+    const t = { ...raw, updatedAt: Date.now() };
     setTreatment(t);
     setSelDate(todayISO());
     setShowEditor(false);
@@ -120,7 +128,7 @@ export default function App() {
   };
 
   const handleReminders = (reminders) => {
-    const t = { ...treatment, reminders };
+    const t = { ...treatment, reminders, updatedAt: Date.now() };
     setTreatment(t);
     if (isActive(t)) saveTreatment(t, buildReminders(t), Object.keys(checked));
   };
