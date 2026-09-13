@@ -1,16 +1,38 @@
-# React + Vite
+# Remédios
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Web app (PWA) para acompanhar o tratamento de um pet: remédios, horários, ração e lembretes no celular.
 
-Currently, two official plugins are available:
+- Tratamento editável no app: nome, dose, frequência, duração, data de início.
+- Ração como parte do tratamento: remédios "antes", "junto" ou "depois" de comer, com horário calculado.
+- Relógio de cápsulas na tela inicial mostrando a próxima dose.
+- Lembretes por push no horário exato de cada dose, mesmo com o app fechado.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Como roda
 
-## React Compiler
+- Front-end: React + Vite, instalado como app na tela de início (PWA).
+- Servidor: funções na Vercel (`api/`).
+- Dados: Upstash Redis (tratamento, doses marcadas, inscrição do push).
+- Lembretes: Upstash QStash agenda uma mensagem por dose e chama `api/send-push` na hora.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Publicação
 
-## Expanding the ESLint configuration
+Cada push na `main` publica na Vercel pelo GitHub Action `.github/workflows/deploy.yml`. Ele precisa do segredo `VERCEL_TOKEN` no repositório.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Variáveis de ambiente (Vercel)
+
+| Variável | Para quê |
+| --- | --- |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Assinatura do web push |
+| `VITE_VAPID_PUBLIC_KEY` | A mesma chave pública, exposta ao app |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Redis |
+| `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY` | QStash (criadas pela integração Upstash na Vercel) |
+| `APP_URL` | Opcional. URL pública, se não for a padrão da Vercel |
+
+## Desenvolvimento
+
+```
+npm install
+npm run dev
+```
+
+Sem servidor local as rotas `/api` respondem 404 e o app segue funcionando só com os dados do navegador.
