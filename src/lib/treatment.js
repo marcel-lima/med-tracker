@@ -254,7 +254,7 @@ export function buildReminders(t) {
     const doseKeys = slot.doses.map(d => d.key);
     out.push({ key: `${slot.key}|1`, at: base, title: `${what} · ${slot.time}`, body: names, doseKeys });
     if (repeatMin > 0) {
-      out.push({ key: `${slot.key}|2`, at: base + repeatMin * 60000, title: `Ainda não tomou? · ${slot.time}`, body: names, doseKeys });
+      out.push({ key: `${slot.key}|2`, at: base + repeatMin * 60000, title: `Ainda não deu? · ${slot.time}`, body: names, doseKeys });
     }
   }));
   return out;

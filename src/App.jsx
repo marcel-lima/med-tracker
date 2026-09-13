@@ -276,7 +276,7 @@ export default function App() {
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-lg font-semibold tabular-nums" style={{ color: done ? 'var(--muted)' : 'var(--fg)' }}>{slot.time}</span>
                       <span className="eyebrow">
-                        {done ? `tomado${slotBy(slot, checked) ? ` · ${slotBy(slot, checked)}` : ''}` : isNext ? 'próxima' : late ? 'atrasada' : ''}
+                        {done ? `dado${slotBy(slot, checked) ? ` · ${slotBy(slot, checked)}` : ''}` : isNext ? 'próxima' : late ? 'atrasada' : ''}
                       </span>
                     </div>
                     <div className="flex flex-col gap-2.5">
