@@ -1,68 +1,33 @@
-import { deflateSync } from 'zlib';
-import { writeFileSync, mkdirSync } from 'fs';
+// Renders scripts/icon.svg to public/icons/*.png with headless Chromium.
+// Run: node scripts/generate-icons.mjs   (needs `playwright` installed, e.g. `npm i --no-save playwright`)
+import { chromium } from 'playwright';
+import { readFileSync, mkdirSync } from 'fs';
+import { fileURLToPath } from 'url';
+import path from 'path';
 
-// ─── PNG encoder (no external deps) ──────────────────────────────────────────
-const CRC_TABLE = new Uint32Array(256);
-for (let i = 0; i < 256; i++) {
-  let c = i;
-  for (let k = 0; k < 8; k++) c = (c & 1) ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
-  CRC_TABLE[i] = c;
+const here = path.dirname(fileURLToPath(import.meta.url));
+const svg = readFileSync(path.join(here, 'icon.svg'), 'utf8');
+const outDir = path.join(here, '..', 'public', 'icons');
+mkdirSync(outDir, { recursive: true });
+
+// maskable: the OS may crop to a circle/squircle inside the central 80%, so the
+// artwork is scaled down to sit inside that safe zone on a white bleed.
+const targets = [
+  { file: 'icon-192.png', size: 192, scale: 1 },
+  { file: 'icon-512.png', size: 512, scale: 1 },
+  { file: 'icon-maskable.png', size: 512, scale: 0.78 },
+];
+
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium' });
+const page = await browser.newPage();
+for (const t of targets) {
+  await page.setViewportSize({ width: t.size, height: t.size });
+  const inner = Math.round(t.size * t.scale);
+  const offset = Math.round((t.size - inner) / 2);
+  await page.setContent(`<!doctype html><html><body style="margin:0;background:#fff;width:${t.size}px;height:${t.size}px;overflow:hidden">
+    <div style="position:absolute;left:${offset}px;top:${offset}px;width:${inner}px;height:${inner}px">${svg.replace('<svg ', `<svg width="${inner}" height="${inner}" `)}</div>
+  </body></html>`);
+  await page.screenshot({ path: path.join(outDir, t.file), clip: { x: 0, y: 0, width: t.size, height: t.size }, omitBackground: false });
+  console.log('wrote', t.file);
 }
-function crc32(buf) {
-  let crc = 0xFFFFFFFF;
-  for (const b of buf) crc = (crc >>> 8) ^ CRC_TABLE[(crc ^ b) & 0xFF];
-  return (crc ^ 0xFFFFFFFF) >>> 0;
-}
-function chunk(type, data) {
-  const t = Buffer.from(type), len = Buffer.allocUnsafe(4), crcB = Buffer.allocUnsafe(4);
-  len.writeUInt32BE(data.length);
-  crcB.writeUInt32BE(crc32(Buffer.concat([t, data])));
-  return Buffer.concat([len, t, data, crcB]);
-}
-
-function lerp(a, b, t) { return Math.round(a + (b - a) * t); }
-
-function makePNG(size, maskable = false) {
-  const ihdr = Buffer.allocUnsafe(13);
-  ihdr.writeUInt32BE(size, 0); ihdr.writeUInt32BE(size, 4);
-  ihdr[8] = 8; ihdr[9] = 6; // RGBA
-  ihdr[10] = ihdr[11] = ihdr[12] = 0;
-
-  // Colors: center (#FED9B7 = 254,217,183) → edge (#F08FA0 = 240,143,160)
-  const [r1,g1,b1] = [254, 217, 183];
-  const [r2,g2,b2] = [240, 143, 160];
-  const half = size / 2;
-  const padding = maskable ? 0.15 : 0; // safe zone for maskable
-
-  const rows = [];
-  for (let y = 0; y < size; y++) {
-    rows.push(0); // filter: none
-    for (let x = 0; x < size; x++) {
-      const nx = (x / size - 0.5) / (0.5 - padding);
-      const ny = (y / size - 0.5) / (0.5 - padding);
-      const dist = Math.min(1, Math.sqrt(nx * nx + ny * ny));
-      const t = dist;
-      const r = lerp(r1, r2, t);
-      const g = lerp(g1, g2, t);
-      const b = lerp(b1, b2, t);
-      // Circular mask for non-maskable, full square for maskable
-      const cx = x - half, cy = y - half;
-      const outside = !maskable && (cx * cx + cy * cy > (half * 0.96) * (half * 0.96));
-      rows.push(r, g, b, outside ? 0 : 255);
-    }
-  }
-
-  const compressed = deflateSync(Buffer.from(rows), { level: 6 });
-  return Buffer.concat([
-    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
-    chunk('IHDR', ihdr),
-    chunk('IDAT', compressed),
-    chunk('IEND', Buffer.alloc(0)),
-  ]);
-}
-
-mkdirSync('public/icons', { recursive: true });
-writeFileSync('public/icons/icon-192.png', makePNG(192, false));
-writeFileSync('public/icons/icon-512.png', makePNG(512, false));
-writeFileSync('public/icons/icon-maskable.png', makePNG(512, true));
-console.log('Icons generated: 192px, 512px, 512px maskable');
+await browser.close();
