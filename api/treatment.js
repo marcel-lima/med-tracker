@@ -2,15 +2,15 @@
 // POST { treatment, reminders, checked }
 // Replaces the treatment on the server and (re)schedules every reminder.
 // treatment: null → clears everything and cancels all reminders.
-import { setJSON, getJSON, smembers, del, cmd } from '../server/redis.js';
+import { setJSON, getJSON, smembers, hgetall, del, cmd } from '../server/redis.js';
 import { scheduleWindow, cancelAll, ensureTopup, removeTopup } from '../server/scheduler.js';
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
-      const [treatment, checked] = await Promise.all([getJSON('treatment'), smembers('checked')]);
+      const [treatment, checked, checkedBy] = await Promise.all([getJSON('treatment'), smembers('checked'), hgetall('checked-by')]);
       res.setHeader('Cache-Control', 'no-store');
-      return res.status(200).json({ ok: true, treatment, checked });
+      return res.status(200).json({ ok: true, treatment, checked, checkedBy });
     } catch (e) {
       console.error('treatment get error:', e);
       return res.status(500).json({ error: e.message });
@@ -36,6 +36,7 @@ export default async function handler(req, res) {
     await setJSON('reminders', clean);
     await del('checked');
     if (checked.length) await cmd('SADD', 'checked', ...checked.map(String));
+    // keep 'checked-by' as is: it only holds names for keys that are still checked
 
     await ensureTopup();
     const result = await scheduleWindow();

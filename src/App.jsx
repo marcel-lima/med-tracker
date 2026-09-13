@@ -10,8 +10,6 @@ import PillClock from './components/PillClock';
 import TreatmentEditor from './components/TreatmentEditor';
 import NotifSheet from './components/NotifSheet';
 
-const USER_NAME = 'Marcel';
-
 const prefersDark = () => window.matchMedia?.('(prefers-color-scheme: dark)').matches;
 
 export default function App() {
@@ -26,6 +24,7 @@ export default function App() {
   const [showEditor, setShowEditor] = useState(false); // false | true | 'new'
   const [showNotif, setShowNotif] = useState(false);
   const [toast, setToast] = useState(null);
+  const [name, setName] = useState(() => storage.get('mt_name') || ''); // this device's person
   const toastTimer = useRef(null);
 
   const active = isActive(treatment);
@@ -89,10 +88,19 @@ export default function App() {
     });
     setChecked(local => {
       const merged = { ...local };
-      (data.checked || []).forEach(k => { merged[k] = true; });
+      const by = data.checkedBy || {};
+      (data.checked || []).forEach(k => { merged[k] = by[k] ? { by: by[k] } : (merged[k] || true); });
       return merged;
     });
   }, [showToast]);
+
+  const askName = () => {
+    const v = window.prompt('Seu nome (aparece na saudação e em quem deu a dose):', name);
+    if (v === null) return;
+    const clean = v.trim().slice(0, 40);
+    setName(clean);
+    storage.set('mt_name', clean);
+  };
 
   useEffect(() => {
     Promise.resolve().then(reconcile);
@@ -105,14 +113,14 @@ export default function App() {
   const toggleDose = useCallback((dose, day) => {
     setChecked(prev => {
       const value = !prev[dose.key];
-      const next = { ...prev, [dose.key]: value };
+      const next = { ...prev, [dose.key]: name ? { by: name, at: Date.now() } : true };
       if (!value) delete next[dose.key];
-      syncChecked(dose.key, value);
+      syncChecked(dose.key, value, name);
       const { total, done } = dayProgress(day, next);
       if (value && total > 0 && done === total) showToast('dia completo');
       return next;
     });
-  }, [showToast]);
+  }, [showToast, name]);
 
   const handleSave = (raw) => {
     const t = { ...raw, updatedAt: Date.now() };
@@ -141,8 +149,8 @@ export default function App() {
   const greeting = useMemo(() => {
     const h = now.getHours();
     const g = h >= 5 && h < 12 ? 'bom dia' : h >= 12 && h < 18 ? 'boa tarde' : 'boa noite';
-    return `${g}, ${USER_NAME}`;
-  }, [now]);
+    return name ? `${g}, ${name}` : g;
+  }, [now, name]);
 
   const nextMeds = nextSlot ? medsForSlot(treatment, nextSlot.slot) : [];
   const nextIsToday = nextSlot?.day.date === today;
@@ -158,8 +166,12 @@ export default function App() {
         {/* ── Header ── */}
         <header className="flex items-start justify-between mb-6">
           <div>
-            <p className="eyebrow mb-1">{greeting}</p>
-            <h1 className="text-[2rem] leading-none font-semibold tracking-tight m-0">Remédios</h1>
+            <button onClick={askName} className="eyebrow mb-1 text-left" title="Definir seu nome">
+              {greeting}{!name && ' · seu nome?'}
+            </button>
+            <h1 className="text-[2rem] leading-none font-semibold tracking-tight m-0">
+              {treatment.pet ? `Remédios da ${treatment.pet}` : 'Remédios'}
+            </h1>
           </div>
           <div className="flex gap-2 mt-0.5">
             {active && (
@@ -263,7 +275,9 @@ export default function App() {
                   <div key={slot.key} className="card" style={{ outline: isNext ? '1.5px solid var(--fg)' : 'none' }}>
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-lg font-semibold tabular-nums" style={{ color: done ? 'var(--muted)' : 'var(--fg)' }}>{slot.time}</span>
-                      <span className="eyebrow">{done ? 'tomado' : isNext ? 'próxima' : late ? 'atrasada' : ''}</span>
+                      <span className="eyebrow">
+                        {done ? `tomado${slotBy(slot, checked) ? ` · ${slotBy(slot, checked)}` : ''}` : isNext ? 'próxima' : late ? 'atrasada' : ''}
+                      </span>
                     </div>
                     <div className="flex flex-col gap-2.5">
                       {slot.doses.map(dose => {
@@ -336,6 +350,12 @@ export default function App() {
       )}
     </div>
   );
+}
+
+// Who marked the slot (first named marker wins)
+function slotBy(slot, checked) {
+  for (const d of slot.doses) { const v = checked[d.key]; if (v && typeof v === 'object' && v.by) return v.by; }
+  return null;
 }
 
 function daysAfter(iso, n) {

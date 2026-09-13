@@ -126,6 +126,7 @@ export function newMed(index = 0) {
 
 export function emptyTreatment() {
   return {
+    pet: '',
     startDate: todayISO(),
     feedings: [],
     meds: [],

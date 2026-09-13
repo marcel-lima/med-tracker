@@ -67,6 +67,7 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, star
     const feedings = [...t.feedings].sort((a, b) => t2m(a) - t2m(b));
     const clean = {
       ...t,
+      pet: (t.pet || '').trim(),
       feedings,
       meds: t.meds.map(m => ({
         ...m,
@@ -95,8 +96,13 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, star
           <button onClick={onCancel} className="icon-btn" aria-label="Fechar"><X size={16} /></button>
         </header>
 
-        {/* Start date */}
-        <section className="card mb-4">
+        {/* Pet + start date */}
+        <section className="card mb-4 flex flex-col gap-3">
+          <label className="flex items-center justify-between gap-3">
+            <span className="text-sm font-medium">Pet</span>
+            <input id="pet-name" className="input w-40 text-right" placeholder="ex.: Kika" value={t.pet || ''}
+                   onChange={e => setT(prev => ({ ...prev, pet: e.target.value.slice(0, 30) }))} />
+          </label>
           <label className="flex items-center justify-between gap-3">
             <span className="text-sm font-medium">Início</span>
             <input type="date" className="input w-auto" value={t.startDate}

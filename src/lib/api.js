@@ -32,8 +32,8 @@ export function clearTreatment() {
 }
 
 // Tell the server a dose was marked (so it won't nag about it).
-export function setChecked(key, value) {
-  return call('/api/checked', { key, value });
+export function setChecked(key, value, by = '') {
+  return call('/api/checked', { key, value, by });
 }
 
 // Push a test notification right now.
