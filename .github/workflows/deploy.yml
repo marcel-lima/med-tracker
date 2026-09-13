@@ -1,8 +1,7 @@
 # Publica na Vercel a cada push na main, sem depender da integração GitHub↔Vercel.
-# Segredos necessários (repositório → Settings → Secrets and variables → Actions):
-#   VERCEL_TOKEN       vercel.com → Account Settings → Tokens → Create
-#   VERCEL_ORG_ID      Projeto → Settings → General → "Team ID" (ou "Vercel ID")
-#   VERCEL_PROJECT_ID  Projeto → Settings → General → "Project ID"
+# Segredo necessário (repositório → Settings → Secrets and variables → Actions):
+#   VERCEL_TOKEN   vercel.com → Account Settings → Tokens → Create
+# O projeto é localizado pelo nome, dentro do time abaixo.
 name: Deploy na Vercel
 
 on:
@@ -18,8 +17,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_SCOPE: marcel-limas-projects
+      VERCEL_PROJECT: med-tracker
     steps:
       - uses: actions/checkout@v4
 
@@ -29,6 +28,9 @@ jobs:
 
       - name: Instalar Vercel CLI
         run: npm install -g vercel@latest
+
+      - name: Vincular ao projeto na Vercel
+        run: vercel link --yes --project "$VERCEL_PROJECT" --scope "$VERCEL_SCOPE" --token="${{ secrets.VERCEL_TOKEN }}"
 
       - name: Baixar configuração do projeto
         run: vercel pull --yes --environment=production --token="${{ secrets.VERCEL_TOKEN }}"
