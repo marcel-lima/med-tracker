@@ -19,7 +19,15 @@ jobs:
     env:
       VERCEL_SCOPE: marcel-limas-projects
       VERCEL_PROJECT: med-tracker
+      VERCEL_TELEMETRY_DISABLED: 1
     steps:
+      - name: Conferir segredo
+        run: |
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
+            echo "::error::Falta o segredo VERCEL_TOKEN em Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
