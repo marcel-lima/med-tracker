@@ -270,7 +270,7 @@ export default function App() {
                                     style={{ textDecoration: on ? 'line-through' : 'none' }}>
                                 {med.id === FEED_ID && <PawPrint size={13} style={{ color: c.a }} />}{med.name}
                               </span>
-                              {foodNote(med) && <span className="block text-[11px]" style={{ color: 'var(--muted)' }}>{foodNote(med)}</span>}
+                              {foodNote(med, treatment.feedings) && <span className="block text-[11px]" style={{ color: 'var(--muted)' }}>{foodNote(med, treatment.feedings)}</span>}
                             </span>
                             <span className="text-xs flex-shrink-0" style={{ color: 'var(--muted)' }}>{med.dose}</span>
                           </button>
@@ -293,7 +293,7 @@ export default function App() {
                   <div key={m.id} className="flex items-center gap-3">
                     <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: COLORS[m.color].a }} />
                     <span className="text-sm font-medium flex-1 truncate">{m.name}</span>
-                    <span className="text-xs" style={{ color: 'var(--muted)' }}>{m.id === FEED_ID ? '' : m.dose || foodNote(m) || ''}</span>
+                    <span className="text-xs" style={{ color: 'var(--muted)' }}>{m.id === FEED_ID ? '' : m.dose || foodNote(m, treatment.feedings) || ''}</span>
                     <span className="text-[11px] tabular-nums" style={{ color: 'var(--muted)' }}>{m.times.join(' · ')}</span>
                   </div>
                 ))}

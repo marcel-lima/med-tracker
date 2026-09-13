@@ -3,7 +3,8 @@
 //   startDate: 'YYYY-MM-DD',
 //   feedings: ['08:00', '20:00'],                 // meal times (optional)
 //   meds: [{ id, name, dose, times: ['08:00', '20:00'], days: 7, color: 'red',
-//            food: 'none' | 'before' | 'with' | 'after', foodMin: 30 }],
+//            food: 'none' | 'before' | 'with' | 'after', foodMin: 30,
+//            foodTimes: ['08:00'] }],   // which meals apply; [] = all
 //   reminders: { offsetMin: 0, repeatMin: 30 },   // 0 = off
 // }
 // When med.food !== 'none', med.times are derived from feedings (± foodMin).
@@ -68,17 +69,32 @@ export function inferFreq(times) {
   return 'custom';
 }
 
+// Meals a med is tied to: its chosen subset, or every meal when none chosen.
+export function mealsFor(med, feedings = []) {
+  const chosen = (med.foodTimes || []).filter(f => feedings.includes(f));
+  return chosen.length ? chosen : [...feedings];
+}
+
+export function mealLabel(time) {
+  const h = t2m(time) / 60;
+  return h < 12 ? 'manhã' : h < 18 ? 'tarde' : 'noite';
+}
+
 // Times a med is actually given: its own, or derived from the meal times.
 export function effectiveTimes(med, feedings = []) {
   if (!med.food || med.food === 'none' || !feedings.length) return [...med.times];
   const shift = med.food === 'before' ? -(Number(med.foodMin) || 0) : med.food === 'after' ? (Number(med.foodMin) || 0) : 0;
-  return [...new Set(feedings.map(f => m2t(t2m(f) + shift)))].sort((a, b) => t2m(a) - t2m(b));
+  return [...new Set(mealsFor(med, feedings).map(f => m2t(t2m(f) + shift)))].sort((a, b) => t2m(a) - t2m(b));
 }
 
-export function foodNote(med) {
+export function foodNote(med, feedings = []) {
   if (!med.food || med.food === 'none') return null;
-  if (med.food === 'with') return 'junto com a ração';
-  return `${med.foodMin} min ${med.food === 'before' ? 'antes' : 'depois'} da ração`;
+  const meals = mealsFor(med, feedings);
+  const which = feedings.length > 1 && meals.length < feedings.length
+    ? ` da ${meals.map(mealLabel).join(' e ')}`
+    : '';
+  if (med.food === 'with') return `junto com a ração${which}`;
+  return `${med.foodMin} min ${med.food === 'before' ? 'antes' : 'depois'} da ração${which}`;
 }
 
 // Real meds + the virtual meal "med", all with effective times.
@@ -104,6 +120,7 @@ export function newMed(index = 0) {
     color: COLOR_ORDER[index % COLOR_ORDER.length],
     food: 'none',
     foodMin: 30,
+    foodTimes: [],
   };
 }
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, Plus, Trash2, PawPrint } from 'lucide-react';
-import { COLORS, COLOR_ORDER, FREQ_PRESETS, FOOD_OPTIONS, newMed, validate, t2m, effectiveTimes, deriveTimes, inferFreq } from '../lib/treatment';
+import { COLORS, COLOR_ORDER, FREQ_PRESETS, FOOD_OPTIONS, newMed, validate, t2m, effectiveTimes, deriveTimes, inferFreq, mealsFor, mealLabel } from '../lib/treatment';
 import TimePicker from './TimePicker';
 
 const DAY_PRESETS = [3, 5, 7, 10, 14, 30, 45, 60];
@@ -74,6 +74,7 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, star
         dose: m.dose.trim(),
         days: m.days === '' ? 1 : Math.max(0, Number(m.days) || 0),
         foodMin: Math.max(0, Number(m.foodMin) || 0),
+        foodTimes: (m.foodTimes || []).filter(f => feedings.includes(f)),
         times: m.food !== 'none' && feedings.length ? effectiveTimes(m, feedings) : [...m.times].sort((a, b) => t2m(a) - t2m(b)),
       })),
     };
@@ -196,6 +197,27 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, star
                           style={{ width: 40, textAlign: 'center' }} />
                         <span style={{ color: 'var(--muted)' }}>min</span>
                       </span>
+                    </div>
+                  </div>
+                )}
+                {med.food !== 'none' && t.feedings.length > 1 && (
+                  <div className="mb-2">
+                    <p className="text-xs mb-1.5" style={{ color: 'var(--muted)' }}>em quais refeições</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[...t.feedings].sort((a, b) => t2m(a) - t2m(b)).map(f => {
+                        const meals = mealsFor(med, t.feedings);
+                        const on = meals.includes(f);
+                        return (
+                          <button key={f} className={`chip tabular-nums ${on ? 'chip-on' : ''}`}
+                                  onClick={() => {
+                                    const next = on ? meals.filter(x => x !== f) : [...meals, f];
+                                    if (!next.length) return; // keep at least one meal
+                                    patchMed(med.id, { foodTimes: next.length === t.feedings.length ? [] : next });
+                                  }}>
+                            {f} · {mealLabel(f)}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
