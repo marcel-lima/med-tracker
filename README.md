@@ -24,9 +24,13 @@ Cada push na `main` publica na Vercel pelo GitHub Action `.github/workflows/depl
 | --- | --- |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Assinatura do web push |
 | `VITE_VAPID_PUBLIC_KEY` | A mesma chave pública, exposta ao app |
-| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Redis |
-| `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY` | QStash (criadas pela integração Upstash na Vercel) |
+| `KV_REST_API_URL`, `KV_REST_API_TOKEN` (ou `UPSTASH_REDIS_REST_*`) | Redis (criadas pela integração Upstash na Vercel) |
+| `QSTASH_URL`, `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY` | QStash (criadas pela integração Upstash na Vercel) |
 | `APP_URL` | Opcional. URL pública, se não for a padrão da Vercel |
+
+## Diagnóstico
+
+`/api/health` mostra, sem expor segredos, se as variáveis existem e se Redis e QStash respondem.
 
 ## Desenvolvimento
 
