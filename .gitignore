@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 .vercel
 .tmp-shots
+
+# env files (Vercel CLI, local secrets)
+.env*
