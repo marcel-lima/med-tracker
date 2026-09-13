@@ -8,11 +8,15 @@ async function call(path, body) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    if (!r.ok) throw new Error(`${path} → ${r.status}`);
-    return await r.json();
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      console.warn('[api]', path, r.status, data);
+      return { ok: false, status: r.status, error: data.error || `HTTP ${r.status}`, detail: data.detail };
+    }
+    return data;
   } catch (e) {
     console.warn('[api]', e.message);
-    return null;
+    return { ok: false, error: e.message };
   }
 }
 

@@ -20,6 +20,7 @@ export default function NotifSheet({ open, onClose, reminders, onChangeReminders
   const [status, setStatus] = useState('idle'); // idle | requesting | granted | denied | unsupported | not-pwa
   const [subscribed, setSubscribed] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [testMsg, setTestMsg] = useState(null);
 
   useEffect(() => {
     if (!open) return;
@@ -59,8 +60,16 @@ export default function NotifSheet({ open, onClose, reminders, onChangeReminders
 
   const test = async () => {
     setTesting(true);
-    await sendTestPush();
-    setTimeout(() => setTesting(false), 1500);
+    setTestMsg(null);
+    const r = await sendTestPush();
+    const map = {
+      sent: 'Enviado. Deve chegar em alguns segundos.',
+      'no-subscription': 'O servidor não tem a inscrição deste aparelho. Toque em Desativar e ative de novo.',
+      expired: 'A inscrição expirou. Toque em Desativar e ative de novo.',
+    };
+    if (r?.ok && map[r.result]) setTestMsg(map[r.result]);
+    else setTestMsg(`Erro no servidor: ${r?.error || 'sem resposta'}${r?.detail ? ` (${JSON.stringify(r.detail)})` : ''}`);
+    setTesting(false);
   };
 
   if (!open) return null;
@@ -141,12 +150,17 @@ export default function NotifSheet({ open, onClose, reminders, onChangeReminders
             </div>
 
             {active ? (
-              <div className="flex gap-2 mt-6">
-                <button onClick={deactivate} className="btn flex-1" style={{ color: 'var(--muted)' }}>Desativar</button>
-                <button onClick={test} className="btn flex-1" disabled={testing}>
-                  <Send size={14} /> {testing ? 'Enviado' : 'Testar'}
-                </button>
-              </div>
+              <>
+                <div className="flex gap-2 mt-6">
+                  <button onClick={deactivate} className="btn flex-1" style={{ color: 'var(--muted)' }}>Desativar</button>
+                  <button onClick={test} className="btn flex-1" disabled={testing}>
+                    <Send size={14} /> {testing ? 'Enviando…' : 'Testar'}
+                  </button>
+                </div>
+                {testMsg && (
+                  <p className="text-xs mt-3 leading-relaxed" style={{ color: testMsg.startsWith('Enviado') ? 'var(--muted)' : '#E5484D' }}>{testMsg}</p>
+                )}
+              </>
             ) : (
               <button onClick={activate} className="btn btn-primary w-full mt-6">Ativar lembretes</button>
             )}

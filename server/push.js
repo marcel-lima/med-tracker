@@ -4,6 +4,8 @@ import { getJSON, del } from './redis.js';
 let configured = false;
 function ensureVapid() {
   if (configured) return;
+  const missing = ['VAPID_SUBJECT', 'VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY'].filter(k => !process.env[k]);
+  if (missing.length) throw new Error(`faltam variáveis: ${missing.join(', ')}`);
   webpush.setVapidDetails(
     process.env.VAPID_SUBJECT,
     process.env.VAPID_PUBLIC_KEY,
