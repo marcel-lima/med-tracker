@@ -62,13 +62,14 @@ export default function NotifSheet({ open, onClose, reminders, onChangeReminders
     setTesting(true);
     setTestMsg(null);
     const r = await sendTestPush();
-    const map = {
-      sent: 'Enviado. Deve chegar em alguns segundos.',
-      'no-subscription': 'O servidor não tem a inscrição deste aparelho. Toque em Desativar e ative de novo.',
-      expired: 'A inscrição expirou. Toque em Desativar e ative de novo.',
-    };
-    if (r?.ok && map[r.result]) setTestMsg(map[r.result]);
-    else setTestMsg(`Erro no servidor: ${r?.error || 'sem resposta'}${r?.detail ? ` (${JSON.stringify(r.detail)})` : ''}`);
+    const s = r?.result;
+    if (r?.ok && s) {
+      if (s.total === 0) setTestMsg('O servidor não tem nenhum aparelho inscrito. Toque em Desativar e ative de novo.');
+      else if (s.sent > 0) setTestMsg(`Enviado para ${s.sent} ${s.sent === 1 ? 'aparelho' : 'aparelhos'}. Deve chegar em alguns segundos.`);
+      else setTestMsg('Nenhum aparelho recebeu. Toque em Desativar e ative de novo.');
+    } else {
+      setTestMsg(`Erro no servidor: ${r?.error || 'sem resposta'}${r?.detail ? ` (${JSON.stringify(r.detail)})` : ''}`);
+    }
     setTesting(false);
   };
 

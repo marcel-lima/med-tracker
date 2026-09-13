@@ -74,28 +74,32 @@ export default function App() {
     toastTimer.current = setTimeout(() => setToast(null), 2400);
   }, []);
 
-  // On every open, compare with the server and keep whichever is newer.
-  // Covers a reinstalled app (empty storage) and edits made on another device.
-  useEffect(() => {
-    let alive = true;
-    fetchTreatment().then(data => {
-      if (!alive || !data?.treatment || !isActive(data.treatment)) return;
-      const serverAt = Number(data.treatment.updatedAt) || 0;
-      setTreatment(local => {
-        const localAt = Number(local.updatedAt) || 0;
-        if (isActive(local) && localAt >= serverAt) return local;
-        showToast(isActive(local) ? 'tratamento atualizado' : 'tratamento recuperado');
-        return data.treatment;
-      });
-      setChecked(local => {
-        const merged = { ...local };
-        (data.checked || []).forEach(k => { merged[k] = true; });
-        return merged;
-      });
+  // Compare with the server and keep whichever is newer. Runs on open and
+  // whenever the app comes back to the foreground, so marks made on another
+  // phone (or a reinstall) show up without restarting.
+  const reconcile = useCallback(async () => {
+    const data = await fetchTreatment();
+    if (!data?.treatment || !isActive(data.treatment)) return;
+    const serverAt = Number(data.treatment.updatedAt) || 0;
+    setTreatment(local => {
+      const localAt = Number(local.updatedAt) || 0;
+      if (isActive(local) && localAt >= serverAt) return local;
+      showToast(isActive(local) ? 'tratamento atualizado' : 'tratamento recuperado');
+      return data.treatment;
     });
-    return () => { alive = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    setChecked(local => {
+      const merged = { ...local };
+      (data.checked || []).forEach(k => { merged[k] = true; });
+      return merged;
+    });
+  }, [showToast]);
+
+  useEffect(() => {
+    Promise.resolve().then(reconcile);
+    const onVisible = () => { if (document.visibilityState === 'visible') reconcile(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [reconcile]);
 
   // ─ Actions ─
   const toggleDose = useCallback((dose, day) => {

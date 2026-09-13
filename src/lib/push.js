@@ -45,7 +45,16 @@ export async function subscribePush() {
 export async function unsubscribePush() {
   const reg = await navigator.serviceWorker.ready;
   const sub = await reg.pushManager.getSubscription();
-  if (sub) await sub.unsubscribe();
+  if (!sub) return;
+  const endpoint = sub.endpoint;
+  await sub.unsubscribe();
+  try {
+    await fetch('/api/subscribe', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endpoint }),
+    });
+  } catch { /* best effort */ }
 }
 
 async function postSubscription(sub) {

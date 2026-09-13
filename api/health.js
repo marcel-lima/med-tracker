@@ -32,7 +32,7 @@ export default async function handler(req, res) {
       })
     : { ok: false, error: 'QSTASH_TOKEN ausente' };
 
-  const subscription = redis.ok ? await timed(async () => !!(await cmd('GET', 'push-sub'))) : { ok: false };
+  const subscriptions = redis.ok ? await timed(async () => Number(await cmd('HLEN', 'push-subs')) + (await cmd('GET', 'push-sub') ? 1 : 0)) : { ok: false };
   const treatment = redis.ok ? await timed(async () => !!(await cmd('GET', 'treatment'))) : { ok: false };
 
   res.setHeader('Cache-Control', 'no-store');
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     env,
     redis: { ...redis, host: redisHost },
     qstash: { ...qstash, base: qstashBase() },
-    stored: { subscription: subscription.value === true, treatment: treatment.value === true },
+    stored: { devices: subscriptions.value ?? 0, treatment: treatment.value === true },
     node: process.version,
     region: process.env.VERCEL_REGION || null,
   });
