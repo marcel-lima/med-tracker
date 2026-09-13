@@ -6,8 +6,12 @@
 //   checked     SET   — dose keys the user marked as taken
 //   push-sub    JSON  — web push subscription
 
-const url = () => process.env.UPSTASH_REDIS_REST_URL;
-const token = () => process.env.UPSTASH_REDIS_REST_TOKEN;
+// The Upstash integration on Vercel names these KV_REST_API_*; older setups
+// used UPSTASH_REDIS_REST_*. Accept both, preferring the integration's.
+export const redisUrl = () => process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+export const redisToken = () => process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+const url = redisUrl;
+const token = redisToken;
 
 export async function cmd(...args) {
   const r = await fetch(url(), {

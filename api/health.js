@@ -1,11 +1,12 @@
 // GET /api/health — diagnóstico: quais variáveis existem e se Redis/QStash respondem.
 // Nunca devolve valores de segredos, só presença e resultado das conexões.
-import { cmd } from '../server/redis.js';
+import { cmd, redisUrl, redisToken } from '../server/redis.js';
+import { qstashBase } from '../server/qstash.js';
 
 const REQUIRED = [
-  'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN',
+  'KV_REST_API_URL', 'KV_REST_API_TOKEN', 'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN',
   'VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'VAPID_SUBJECT',
-  'QSTASH_TOKEN', 'QSTASH_CURRENT_SIGNING_KEY', 'QSTASH_NEXT_SIGNING_KEY',
+  'QSTASH_URL', 'QSTASH_TOKEN', 'QSTASH_CURRENT_SIGNING_KEY', 'QSTASH_NEXT_SIGNING_KEY',
 ];
 
 async function timed(fn) {
@@ -16,15 +17,15 @@ async function timed(fn) {
 
 export default async function handler(req, res) {
   const env = Object.fromEntries(REQUIRED.map(k => [k, !!process.env[k]]));
-  const redisHost = (() => { try { return new URL(process.env.UPSTASH_REDIS_REST_URL).host; } catch { return null; } })();
+  const redisHost = (() => { try { return new URL(redisUrl()).host; } catch { return null; } })();
 
-  const redis = env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN
+  const redis = redisUrl() && redisToken()
     ? await timed(() => cmd('PING'))
     : { ok: false, error: 'variáveis do Redis ausentes' };
 
   const qstash = env.QSTASH_TOKEN
     ? await timed(async () => {
-        const r = await fetch('https://qstash.upstash.io/v2/schedules', { headers: { Authorization: `Bearer ${process.env.QSTASH_TOKEN}` } });
+        const r = await fetch(`${qstashBase()}/v2/schedules`, { headers: { Authorization: `Bearer ${process.env.QSTASH_TOKEN}` } });
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const list = await r.json();
         return { schedules: Array.isArray(list) ? list.length : 0 };
@@ -39,7 +40,7 @@ export default async function handler(req, res) {
     ok: redis.ok && qstash.ok && env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY && env.VAPID_SUBJECT,
     env,
     redis: { ...redis, host: redisHost },
-    qstash,
+    qstash: { ...qstash, base: qstashBase() },
     stored: { subscription: subscription.value === true, treatment: treatment.value === true },
     node: process.version,
     region: process.env.VERCEL_REGION || null,

@@ -1,6 +1,7 @@
 import { Client, Receiver } from '@upstash/qstash';
 
-export const qstash = () => new Client({ token: process.env.QSTASH_TOKEN });
+export const qstashBase = () => (process.env.QSTASH_URL || 'https://qstash.upstash.io').replace(/\/$/, '');
+export const qstash = () => new Client({ token: process.env.QSTASH_TOKEN, baseUrl: qstashBase() });
 
 // Public base URL of the deployment, used as QStash destination.
 export function appUrl() {
