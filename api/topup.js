@@ -6,8 +6,8 @@ import { scheduleWindow, pruneSched } from '../server/scheduler.js';
 export const config = { api: { bodyParser: false } };
 
 export default async function handler(req, res) {
-  const body = await verifyQStash(req);
-  if (body === null) return res.status(401).json({ error: 'invalid_signature' });
+  const v = await verifyQStash(req);
+  if (!v.ok) return res.status(401).json({ error: 'invalid_signature', reason: v.reason });
   try {
     const pruned = await pruneSched();
     const scheduled = await scheduleWindow();

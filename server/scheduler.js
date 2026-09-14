@@ -29,7 +29,8 @@ export async function scheduleWindow() {
       url: target,
       body: { key: r.key, title: r.title, body: r.body, doseKeys: r.doseKeys },
       notBefore: Math.floor(r.at / 1000),
-      deduplicationId: `mt-${r.key}-${r.at}`,
+      // no deduplicationId: after a re-save we cancel and re-publish the same
+      // reminders, and QStash would silently drop them as duplicates
       retries: 3,
     }))
   );

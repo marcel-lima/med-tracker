@@ -23,17 +23,26 @@ export async function rawBody(req) {
 // or null if the signature is missing/invalid.
 export async function verifyQStash(req) {
   const signature = req.headers['upstash-signature'];
-  if (!signature) return null;
-  const body = await rawBody(req);
+  if (!signature) return { ok: false, reason: 'sem assinatura' };
+
+  // Vercel's Node helpers may have parsed the body already; QStash sends
+  // compact JSON, so re-serialising a parsed object reproduces the bytes.
+  let body;
+  if (typeof req.body === 'string') body = req.body;
+  else if (req.body && typeof req.body === 'object') body = JSON.stringify(req.body);
+  else body = await rawBody(req);
+
   const receiver = new Receiver({
     currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY,
     nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY,
   });
   try {
     const ok = await receiver.verify({ signature, body });
-    if (!ok) return null;
-  } catch {
-    return null;
+    if (!ok) return { ok: false, reason: 'assinatura inválida' };
+  } catch (e) {
+    return { ok: false, reason: e.message };
   }
-  return body ? JSON.parse(body) : {};
+  let data;
+  try { data = body ? JSON.parse(body) : {}; } catch { data = {}; }
+  return { ok: true, data };
 }

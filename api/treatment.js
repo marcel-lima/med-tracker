@@ -9,8 +9,13 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       const [treatment, checked, checkedBy] = await Promise.all([getJSON('treatment'), smembers('checked'), hgetall('checked-by')]);
+      // Self-heal: if nothing is scheduled but reminders lie ahead, schedule now.
+      let healed = 0;
+      try {
+        if (treatment && Number(await cmd('HLEN', 'sched')) === 0) healed = (await scheduleWindow()).scheduled;
+      } catch (e) { console.warn('self-heal:', e.message); }
       res.setHeader('Cache-Control', 'no-store');
-      return res.status(200).json({ ok: true, treatment, checked, checkedBy });
+      return res.status(200).json({ ok: true, treatment, checked, checkedBy, healed });
     } catch (e) {
       console.error('treatment get error:', e);
       return res.status(500).json({ error: e.message });

@@ -34,6 +34,20 @@ export default async function handler(req, res) {
 
   const subscriptions = redis.ok ? await timed(async () => Number(await cmd('HLEN', 'push-subs')) + (await cmd('GET', 'push-sub') ? 1 : 0)) : { ok: false };
   const treatment = redis.ok ? await timed(async () => !!(await cmd('GET', 'treatment'))) : { ok: false };
+  const scheduled = redis.ok ? await timed(async () => Number(await cmd('HLEN', 'sched'))) : { ok: false };
+  const nextReminder = redis.ok ? await timed(async () => {
+    const list = JSON.parse((await cmd('GET', 'reminders')) || '[]');
+    const upcoming = list.filter(r => r.at > Date.now()).sort((a, b) => a.at - b.at);
+    return upcoming.length ? { total: upcoming.length, next: new Date(upcoming[0].at).toISOString(), title: upcoming[0].title } : { total: 0 };
+  }) : { ok: false };
+  const recent = redis.ok ? await timed(async () => ((await cmd('LRANGE', 'push-log', 0, 9)) || []).map(x => { try { return JSON.parse(x); } catch { return x; } })) : { ok: false };
+  const dlq = env.QSTASH_TOKEN ? await timed(async () => {
+    const r = await fetch(`${qstashBase()}/v2/dlq?count=5`, { headers: { Authorization: `Bearer ${process.env.QSTASH_TOKEN}` } });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    const msgs = data.messages || [];
+    return { failed: msgs.length, sample: msgs.slice(0, 3).map(m => ({ url: m.url, status: m.responseStatus, body: (m.responseBody || '').slice(0, 120) })) };
+  }) : { ok: false };
 
   res.setHeader('Cache-Control', 'no-store');
   return res.status(200).json({
@@ -41,7 +55,10 @@ export default async function handler(req, res) {
     env,
     redis: { ...redis, host: redisHost },
     qstash: { ...qstash, base: qstashBase() },
-    stored: { devices: subscriptions.value ?? 0, treatment: treatment.value === true },
+    stored: { devices: subscriptions.value ?? 0, treatment: treatment.value === true, scheduledMessages: scheduled.value ?? 0 },
+    reminders: nextReminder.value ?? null,
+    deadLetters: dlq.value ?? dlq.error,
+    recentDeliveries: recent.value ?? [],
     node: process.version,
     region: process.env.VERCEL_REGION || null,
   });
