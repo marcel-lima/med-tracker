@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Bell, BellOff, X, Smartphone, CheckCircle, AlertCircle, Send } from 'lucide-react';
+import { Bell, BellOff, X, Smartphone, CheckCircle, AlertCircle, Send, Clock } from 'lucide-react';
 import { isPushSupported, isInstalledPWA, getPushPermission, subscribePush, unsubscribePush, ensureRegistered, registrationStatus } from '../lib/push';
-import { sendTestPush } from '../lib/api';
+import { sendTestPush, sendScheduledTest } from '../lib/api';
 
 const OFFSETS = [
   { label: 'na hora', value: 0 },
@@ -21,6 +21,17 @@ export default function NotifSheet({ open, onClose, reminders, onChangeReminders
   const [subscribed, setSubscribed] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testMsg, setTestMsg] = useState(null);
+  const [scheduling, setScheduling] = useState(false);
+
+  const scheduledTest = async () => {
+    setScheduling(true);
+    setTestMsg(null);
+    await refreshReg();
+    const r = await sendScheduledTest();
+    if (r?.ok) setTestMsg('Agendado. Feche o app e aguarde: em cerca de 1 minuto deve chegar "Teste agendado".');
+    else setTestMsg(`Erro ao agendar: ${r?.error || 'sem resposta'}`);
+    setScheduling(false);
+  };
   const [reg, setReg] = useState(null); // { devices, registered } from the server
   const [activateErr, setActivateErr] = useState(null);
 
@@ -174,6 +185,9 @@ export default function NotifSheet({ open, onClose, reminders, onChangeReminders
                     <Send size={14} /> {testing ? 'Enviando…' : 'Testar'}
                   </button>
                 </div>
+                <button onClick={scheduledTest} className="btn w-full mt-2" disabled={scheduling}>
+                  <Clock size={14} /> {scheduling ? 'Agendando…' : 'Testar em 1 min (pelo agendador)'}
+                </button>
                 {testMsg && (
                   <p className="text-xs mt-3 leading-relaxed" style={{ color: testMsg.startsWith('Enviado') ? 'var(--muted)' : '#E5484D' }}>{testMsg}</p>
                 )}

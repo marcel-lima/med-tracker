@@ -51,3 +51,8 @@ export async function fetchTreatment() {
     return null;
   }
 }
+
+// Schedule a real reminder for ~1 minute from now through QStash.
+export function sendScheduledTest() {
+  return call('/api/test-schedule', {});
+}
