@@ -58,9 +58,43 @@ export async function unsubscribePush() {
 }
 
 async function postSubscription(sub) {
-  await fetch('/api/subscribe', {
+  const r = await fetch('/api/subscribe', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(sub),
   });
+  if (!r.ok) {
+    const data = await r.json().catch(() => ({}));
+    throw new Error(`Não consegui registrar este aparelho no servidor (${data.error || r.status}).`);
+  }
+}
+
+// If this device already has a push subscription, make sure the server knows it.
+// Cheap and idempotent; called whenever the app opens.
+export async function ensureRegistered() {
+  try {
+    if (!isPushSupported() || Notification.permission !== 'granted') return null;
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (!sub) return null;
+    await postSubscription(sub.toJSON());
+    return sub.endpoint;
+  } catch (e) {
+    console.warn('[push] ensureRegistered:', e.message);
+    return null;
+  }
+}
+
+// Ask the server whether this device is registered and how many devices exist.
+export async function registrationStatus() {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    const q = sub ? `?endpoint=${encodeURIComponent(sub.endpoint)}` : '';
+    const r = await fetch(`/api/subscribe${q}`, { cache: 'no-store' });
+    if (!r.ok) return null;
+    return await r.json(); // { devices, registered }
+  } catch {
+    return null;
+  }
 }

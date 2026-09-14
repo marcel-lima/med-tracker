@@ -6,6 +6,7 @@ import {
   dayProgress, medsForSlot, medById, allMeds, foodNote, formatDate, todayISO, DOW,
 } from './lib/treatment';
 import { saveTreatment, clearTreatment, fetchTreatment, setChecked as syncChecked } from './lib/api';
+import { ensureRegistered } from './lib/push';
 import PillClock from './components/PillClock';
 import TreatmentEditor from './components/TreatmentEditor';
 import NotifSheet from './components/NotifSheet';
@@ -77,6 +78,7 @@ export default function App() {
   // whenever the app comes back to the foreground, so marks made on another
   // phone (or a reinstall) show up without restarting.
   const reconcile = useCallback(async () => {
+    ensureRegistered(); // keep this device's push registration on the server
     const data = await fetchTreatment();
     if (!data?.treatment || !isActive(data.treatment)) return;
     const serverAt = Number(data.treatment.updatedAt) || 0;

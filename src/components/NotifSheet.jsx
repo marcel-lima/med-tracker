@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Bell, BellOff, X, Smartphone, CheckCircle, AlertCircle, Send } from 'lucide-react';
-import { isPushSupported, isInstalledPWA, getPushPermission, subscribePush, unsubscribePush } from '../lib/push';
+import { isPushSupported, isInstalledPWA, getPushPermission, subscribePush, unsubscribePush, ensureRegistered, registrationStatus } from '../lib/push';
 import { sendTestPush } from '../lib/api';
 
 const OFFSETS = [
@@ -21,6 +21,13 @@ export default function NotifSheet({ open, onClose, reminders, onChangeReminders
   const [subscribed, setSubscribed] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testMsg, setTestMsg] = useState(null);
+  const [reg, setReg] = useState(null); // { devices, registered } from the server
+  const [activateErr, setActivateErr] = useState(null);
+
+  const refreshReg = async () => {
+    await ensureRegistered();
+    setReg(await registrationStatus());
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -34,20 +41,24 @@ export default function NotifSheet({ open, onClose, reminders, onChangeReminders
       if (!alive) return;
       setSubscribed(!!sub);
       setStatus(perm === 'granted' ? 'granted' : perm === 'denied' ? 'denied' : 'idle');
+      if (sub) { await ensureRegistered(); const st = await registrationStatus(); if (alive) setReg(st); }
     })();
     return () => { alive = false; };
   }, [open]);
 
   const activate = async () => {
     setStatus('requesting');
+    setActivateErr(null);
     try {
       const perm = await Notification.requestPermission();
       if (perm !== 'granted') { setStatus('denied'); return; }
       await subscribePush();
       setSubscribed(true);
       setStatus('granted');
+      setReg(await registrationStatus());
     } catch (e) {
       console.error(e);
+      setActivateErr(e.message || 'Não deu certo. Tente de novo.');
       setStatus('idle');
     }
   };
@@ -56,6 +67,7 @@ export default function NotifSheet({ open, onClose, reminders, onChangeReminders
     await unsubscribePush();
     setSubscribed(false);
     setStatus('idle');
+    setReg(null);
   };
 
   const test = async () => {
@@ -123,11 +135,15 @@ export default function NotifSheet({ open, onClose, reminders, onChangeReminders
         {(status === 'idle' || status === 'granted') && (
           <>
             {active ? (
-              <Block icon={<CheckCircle size={20} color="#3DBF7A" />} title="Lembretes ativos"
-                     body="Você recebe um aviso em cada dose, mesmo com o app fechado." />
+              <Block icon={<CheckCircle size={20} color={reg && !reg.registered ? '#F5822B' : '#3DBF7A'} />} title="Lembretes ativos"
+                     body={reg
+                       ? (reg.registered
+                          ? `Este aparelho está registrado. ${reg.devices} ${reg.devices === 1 ? 'aparelho recebe' : 'aparelhos recebem'} os avisos.`
+                          : 'Este aparelho ainda não está registrado no servidor. Toque em Desativar e ative de novo.')
+                       : 'Você recebe um aviso em cada dose, mesmo com o app fechado.'} />
             ) : (
               <Block icon={<Bell size={20} color="#F5822B" />} title="Ativar lembretes"
-                     body="Receba um aviso em cada dose, mesmo com o app fechado." />
+                     body={activateErr || 'Receba um aviso em cada dose, mesmo com o app fechado.'} />
             )}
 
             <div className="mt-6">
@@ -154,7 +170,7 @@ export default function NotifSheet({ open, onClose, reminders, onChangeReminders
               <>
                 <div className="flex gap-2 mt-6">
                   <button onClick={deactivate} className="btn flex-1" style={{ color: 'var(--muted)' }}>Desativar</button>
-                  <button onClick={test} className="btn flex-1" disabled={testing}>
+                  <button onClick={async () => { await refreshReg(); await test(); }} className="btn flex-1" disabled={testing}>
                     <Send size={14} /> {testing ? 'Enviando…' : 'Testar'}
                   </button>
                 </div>
