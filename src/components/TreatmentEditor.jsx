@@ -200,7 +200,7 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, star
                           value={med.foodMin}
                           onChange={e => patchMed(med.id, { foodMin: e.target.value.replace(/\D/g, '').slice(0, 3) })}
                           onBlur={() => patchMed(med.id, { foodMin: Math.min(240, Math.max(1, Number(med.foodMin) || 30)) })}
-                          style={{ width: 40, textAlign: 'center' }} />
+                          style={{ width: '2.5rem', textAlign: 'center' }} />
                         <span style={{ color: 'var(--muted)' }}>min</span>
                       </span>
                     </div>
@@ -295,7 +295,7 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, star
                       value={Number(med.days) === 0 ? '' : med.days}
                       onChange={e => patchMed(med.id, { days: e.target.value.replace(/\D/g, '').slice(0, 3) })}
                       onBlur={() => patchMed(med.id, { days: med.days === '' ? 0 : Math.min(365, Math.max(1, Number(med.days) || 1)) })}
-                      style={{ width: 40, textAlign: 'center' }} />
+                      style={{ width: '2.5rem', textAlign: 'center' }} />
                     <span style={{ color: 'var(--muted)' }}>dias</span>
                   </span>
                 </div>
@@ -358,7 +358,7 @@ function DoseField({ dose, onChange, id }) {
             placeholder="qtd"
             value={QTY_PRESETS.includes(qty) ? '' : qty}
             onChange={e => onChange(joinDose(e.target.value, unit))}
-            style={{ width: 48, textAlign: 'center' }} />
+            style={{ width: '3rem', textAlign: 'center' }} />
         </span>
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
@@ -375,7 +375,7 @@ function DoseField({ dose, onChange, id }) {
               autoFocus
               value={customUnit ? unit : ''}
               onChange={e => onChange(joinDose(qty, e.target.value))}
-              style={{ width: 80 }} />
+              style={{ width: '5rem' }} />
           </span>
         ) : (
           <button onClick={() => { setOtherOpen(true); onChange(joinDose(qty, '')); }}

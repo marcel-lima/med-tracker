@@ -171,7 +171,7 @@ export default function App() {
             <button onClick={askName} className="eyebrow mb-1 text-left" title="Definir seu nome">
               {greeting}{!name && ' · seu nome?'}
             </button>
-            <h1 className="text-[2rem] leading-none font-semibold tracking-tight m-0">
+            <h1 className="text-[2rem] leading-none font-semibold tracking-tight m-0" style={{ textWrap: "balance" }}>
               {treatment.pet ? `Remédios da ${treatment.pet}` : 'Remédios'}
             </h1>
           </div>
@@ -238,9 +238,9 @@ export default function App() {
                 const complete = total > 0 && done === total;
                 return (
                   <button key={day.date} onClick={() => setSelDate(day.date)}
-                          className="flex-shrink-0 flex flex-col items-center gap-1 w-[40px] py-2 rounded-2xl transition-colors"
+                          className="flex-shrink-0 flex flex-col items-center gap-1 w-[2.5rem] py-2 rounded-2xl transition-colors"
                           style={{ background: isSel ? 'var(--card)' : 'transparent' }}>
-                    <span className="text-[9px] uppercase tracking-wider" style={{ color: isSel ? 'var(--fg)' : 'var(--muted)' }}>
+                    <span className="text-[0.5625rem] uppercase tracking-wider" style={{ color: isSel ? 'var(--fg)' : 'var(--muted)' }}>
                       {DOW[day.dateObj.getDay()]}
                     </span>
                     <span className="text-base leading-none font-medium tabular-nums" style={{ color: isSel ? 'var(--fg)' : 'var(--muted)' }}>
@@ -298,7 +298,7 @@ export default function App() {
                                     style={{ textDecoration: on ? 'line-through' : 'none' }}>
                                 {med.id === FEED_ID && <PawPrint size={13} style={{ color: c.a }} />}{med.name}
                               </span>
-                              {foodNote(med, treatment.feedings) && <span className="block text-[11px]" style={{ color: 'var(--muted)' }}>{foodNote(med, treatment.feedings)}</span>}
+                              {foodNote(med, treatment.feedings) && <span className="block text-[0.6875rem]" style={{ color: 'var(--muted)' }}>{foodNote(med, treatment.feedings)}</span>}
                             </span>
                             <span className="text-xs flex-shrink-0" style={{ color: 'var(--muted)' }}>{med.dose}</span>
                           </button>
@@ -322,7 +322,7 @@ export default function App() {
                     <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: COLORS[m.color].a }} />
                     <span className="text-sm font-medium flex-1 truncate">{m.name}</span>
                     <span className="text-xs" style={{ color: 'var(--muted)' }}>{m.id === FEED_ID ? '' : m.dose || foodNote(m, treatment.feedings) || ''}</span>
-                    <span className="text-[11px] tabular-nums" style={{ color: 'var(--muted)' }}>{m.times.join(' · ')}</span>
+                    <span className="text-[0.6875rem] tabular-nums" style={{ color: 'var(--muted)' }}>{m.times.join(' · ')}</span>
                   </div>
                 ))}
               </div>

@@ -26,7 +26,9 @@
 
 @layer base {
   * { box-sizing: border-box; }
-  html { background: var(--bg); }
+  /* Everything is rem-based, so this one rule scales type and spacing with the
+     screen width: 16px on a 390px iPhone, ~17px on a 412px Android, up to 20px. */
+  html { background: var(--bg); font-size: clamp(16px, 4.1vw, 20px); }
   body {
     margin: 0;
     background: var(--bg);
@@ -43,53 +45,53 @@
 
 @layer components {
   .eyebrow {
-    font-size: 10px;
-    letter-spacing: 0.2em;
+    font-size: 0.6875rem;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--muted);
     font-weight: 500;
   }
   .card {
     background: var(--card);
-    border-radius: 24px;
-    padding: 18px;
+    border-radius: 1.5rem;
+    padding: 1.125rem;
   }
   .btn {
-    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-    height: 48px; padding: 0 20px; border-radius: 999px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    height: 3rem; padding: 0 1.25rem; border-radius: 999px;
     background: var(--card); color: var(--fg);
-    font-size: 14px; font-weight: 500;
+    font-size: 0.875rem; font-weight: 500;
     transition: transform .12s ease, opacity .12s ease;
   }
   .btn:active { transform: scale(.97); }
   .btn-primary { background: var(--primary); color: var(--primary-fg); }
   .icon-btn {
-    width: 36px; height: 36px; border-radius: 999px;
+    width: 2.25rem; height: 2.25rem; border-radius: 999px;
     display: inline-flex; align-items: center; justify-content: center;
     background: var(--card); color: var(--fg);
     transition: transform .12s ease;
   }
   .icon-btn:active { transform: scale(.92); }
   .input {
-    background: var(--bg); border: 1px solid var(--line); border-radius: 14px;
-    height: 44px; padding: 0 14px; font-size: 15px; outline: none; min-width: 0;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 0.875rem;
+    height: 2.75rem; padding: 0 0.875rem; font-size: 0.9375rem; outline: none; min-width: 0;
   }
   .input:focus { border-color: var(--fg); }
   .input::placeholder { color: var(--muted); }
   .chip {
-    display: inline-flex; align-items: center; gap: 4px;
-    height: 34px; padding: 0 12px; border-radius: 999px;
-    font-size: 13px; font-weight: 500;
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    height: 2.125rem; padding: 0 0.75rem; border-radius: 999px;
+    font-size: 0.8125rem; font-weight: 500;
     background: var(--bg); border: 1px solid var(--line); color: var(--fg);
   }
   .chip-on { background: var(--primary); color: var(--primary-fg); border-color: var(--primary); }
   .time-pill {
-    display: inline-flex; align-items: center; gap: 6px;
-    height: 34px; padding: 0 8px 0 10px; border-radius: 999px;
+    display: inline-flex; align-items: center; gap: 0.375rem;
+    height: 2.125rem; padding: 0 0.5rem 0 0.625rem; border-radius: 999px;
     background: var(--bg); border: 1px solid var(--line);
-    font-size: 13px; font-variant-numeric: tabular-nums;
+    font-size: 0.8125rem; font-variant-numeric: tabular-nums;
   }
-  .time-pill input { background: transparent; border: 0; outline: none; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .time-pill input { background: transparent; border: 0; outline: none; font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
   .time-pill > button:first-child { color: var(--fg); font-weight: 500; font-variant-numeric: tabular-nums; }
   .time-pill button { color: var(--muted); display: inline-flex; }
   .sheet-full {
@@ -99,33 +101,33 @@
   }
   .sheet-footer {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 51;
-    padding: 12px 0 calc(12px + env(safe-area-inset-bottom, 12px));
+    padding: 0.75rem 0 calc(0.75rem + env(safe-area-inset-bottom, 0.75rem));
     background: var(--bg);
     border-top: 1px solid var(--line);
   }
   .bottom-sheet {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
     max-height: 88svh; overflow-y: auto;
-    background: var(--bg); border-radius: 28px 28px 0 0;
-    padding: 12px 24px calc(28px + env(safe-area-inset-bottom, 0px));
-    box-shadow: 0 -12px 40px rgba(0,0,0,.12);
+    background: var(--bg); border-radius: 1.75rem 1.75rem 0 0;
+    padding: 0.75rem 1.5rem calc(1.75rem + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -0.75rem 2.5rem rgba(0,0,0,.12);
     animation: sheetUp .28s cubic-bezier(.2,.8,.2,1);
   }
   .backdrop { position: fixed; inset: 0; z-index: 59; background: rgba(0,0,0,.35); }
   .check {
-    width: 26px; height: 26px; border-radius: 999px; flex-shrink: 0;
+    width: 1.625rem; height: 1.625rem; border-radius: 999px; flex-shrink: 0;
     display: inline-flex; align-items: center; justify-content: center;
-    border: 1.5px solid var(--line); background: var(--bg);
+    border: 1.0.3125rem solid var(--line); background: var(--bg);
     transition: transform .12s ease, background .2s ease, border-color .2s ease;
   }
   .check:active { transform: scale(.9); }
   .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
   .scrollbar-hide::-webkit-scrollbar { display: none; }
-  .safe-bottom { padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
+  .safe-bottom { padding-bottom: calc(2.5rem + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* ─ Pill clock ─ */
-.pill-clock { width: min(100%, 300px); height: auto; display: block; margin: 0 auto; }
+.pill-clock { width: min(100%, 18.75rem); height: auto; display: block; margin: 0 auto; }
 @keyframes capIn {
   from { opacity: 0; transform: scale(.6); }
   to   { opacity: 1; transform: scale(1); }

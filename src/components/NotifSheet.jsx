@@ -125,7 +125,7 @@ export default function NotifSheet({ open, onClose, reminders, onChangeReminders
             <ol className="mt-4 space-y-2.5">
               {['Toque em Compartilhar (□↑) no Safari', 'Toque em "Adicionar à Tela de Início"', 'Toque em "Adicionar"', 'Abra o app pelo ícone e volte aqui'].map((step, i) => (
                 <li key={i} className="flex gap-3 text-sm">
-                  <span className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-semibold"
+                  <span className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[0.625rem] font-semibold"
                         style={{ background: 'var(--primary)', color: 'var(--primary-fg)', marginTop: 1 }}>{i + 1}</span>
                   {step}
                 </li>
