@@ -37,8 +37,9 @@ export default function PillClock({ meds = [], today = null, checked = {}, targe
   }, [meds, today, checked]);
 
   const empty = meds.length === 0;
-  const grey = dark ? '#2A3358' : '#DCE0EC';
-  const hand = dark ? '#E9ECF7' : '#1C2451';
+  const grey = dark ? '#2C2C31' : '#DCE0EC';
+  const hand = dark ? '#F4F4F5' : '#1C2451';
+  const minuteHand = dark ? '#F5B942' : '#F0655A'; // accent, like a watch face's second hand
 
   // Hands
   const tm = target ? t2m(target) : now.getHours() * 60 + now.getMinutes();
@@ -87,10 +88,10 @@ export default function PillClock({ meds = [], today = null, checked = {}, targe
       <g className={intro ? 'hands-enter' : undefined}>
         <line x1={C} y1={C + 8} x2={C} y2={C - 62} stroke={hand} strokeWidth="6" strokeLinecap="round"
               transform={`rotate(${hourAngle} ${C} ${C})`} style={{ transition: 'transform .8s cubic-bezier(.2,.8,.2,1)' }} />
-        <line x1={C} y1={C + 10} x2={C} y2={C - 92} stroke={hand} strokeWidth="4" strokeLinecap="round"
+        <line x1={C} y1={C + 10} x2={C} y2={C - 92} stroke={minuteHand} strokeWidth="4" strokeLinecap="round"
               transform={`rotate(${minuteAngle} ${C} ${C})`} style={{ transition: 'transform .8s cubic-bezier(.2,.8,.2,1)' }} />
         <circle cx={C} cy={C} r="6" fill={hand} />
-        <circle cx={C} cy={C} r="2" fill={dark ? '#12162A' : '#F2F3F7'} />
+        <circle cx={C} cy={C} r="2" fill={dark ? '#0B0B0D' : '#F2F3F7'} />
       </g>
     </svg>
   );

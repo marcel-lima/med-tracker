@@ -16,15 +16,16 @@
   --ok: #34C38F;
 }
 .dark {
-  --bg: #12162A;
-  --fg: #E9ECF7;
-  --muted: #8F99C2;
-  --line: #262D4D;
-  --card: #1B2140;
-  --card-2: #232B52;
-  --primary: #6C8CFF;
-  --primary-fg: #0E1330;
-  --accent: #FF7B70;
+  /* Apple watch-face dark: true black ground, warm greys, amber accent */
+  --bg: #0B0B0D;
+  --fg: #F4F4F5;
+  --muted: #8E8E93;
+  --line: #26262B;
+  --card: #18181C;
+  --card-2: #222226;
+  --primary: #F5B942;
+  --primary-fg: #1A1200;
+  --accent: #F5B942;
   --ok: #3ED39C;
 }
 
