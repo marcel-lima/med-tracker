@@ -26,6 +26,7 @@ export default function App() {
   const [showNotif, setShowNotif] = useState(false);
   const [toast, setToast] = useState(null);
   const [name, setName] = useState(() => storage.get('mt_name') || ''); // this device's person
+  const [scrolled, setScrolled] = useState(false);
   const toastTimer = useRef(null);
 
   const active = isActive(treatment);
@@ -60,6 +61,22 @@ export default function App() {
     storage.set('mt_synced_at', Date.now());
     saveTreatment(treatment, buildReminders(treatment), Object.keys(checked));
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Collapse the header after a little scrolling (hysteresis avoids flicker)
+  useEffect(() => {
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const y = window.scrollY;
+        setScrolled(prev => (prev ? y > 24 : y > 64));
+        ticking = false;
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   // Clock tick
@@ -163,19 +180,18 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-lg mx-auto px-5 pt-8 safe-bottom">
-
-        {/* ── Header ── */}
-        <header className="flex items-start justify-between mb-6">
-          <div>
-            <button onClick={askName} className="eyebrow mb-1 text-left" title="Definir seu nome">
+      {/* ── Header: sticky, collapses to one line once the page scrolls ── */}
+      <header className={`app-header ${scrolled ? 'compact' : ''}`}>
+        <div className="max-w-lg mx-auto px-5 flex items-start justify-between">
+          <div className="min-w-0">
+            <button onClick={askName} className="greet eyebrow text-left block" title="Definir seu nome">
               {greeting}{!name && ' · seu nome?'}
             </button>
-            <h1 className="text-[2rem] leading-none font-bold tracking-tight m-0" style={{ textWrap: 'balance', color: 'var(--title)' }}>
+            <h1 className="title leading-none font-bold tracking-tight m-0" style={{ color: 'var(--title)' }}>
               {treatment.pet ? <>Remédios da <span style={{ color: 'var(--title-name)' }}>{treatment.pet}</span></> : 'Remédios'}
             </h1>
           </div>
-          <div className="flex gap-2 mt-0.5">
+          <div className="flex gap-2 flex-shrink-0">
             {active && (
               <button onClick={() => setShowEditor(true)} className="icon-btn" aria-label="Editar tratamento">
                 <Pencil size={15} />
@@ -186,7 +202,10 @@ export default function App() {
               {dark ? <Sun size={15} /> : <Moon size={15} />}
             </button>
           </div>
-        </header>
+        </div>
+      </header>
+
+      <div className="max-w-lg mx-auto px-5 pt-2 safe-bottom">
 
         {/* ── Clock ── */}
         <div className="mb-5">

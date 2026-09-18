@@ -136,6 +136,27 @@
   .safe-bottom { padding-bottom: calc(2.5rem + env(safe-area-inset-bottom, 0px)); }
 }
 
+/* ─ Sticky header ─ */
+.app-header {
+  position: sticky; top: 0; z-index: 30;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 1.5rem);
+  padding-bottom: 1rem;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border-bottom: 1px solid transparent;
+  transition: padding .25s ease, border-color .25s ease;
+}
+.app-header .greet { max-height: 2rem; opacity: 1; margin-bottom: .25rem; overflow: hidden; transition: max-height .25s ease, opacity .2s ease, margin .25s ease; }
+.app-header .title { font-size: 2rem; text-wrap: balance; transition: font-size .25s ease; }
+.app-header.compact {
+  padding-top: calc(env(safe-area-inset-top, 0px) + .5rem);
+  padding-bottom: .5rem;
+  border-bottom-color: var(--line);
+}
+.app-header.compact .greet { max-height: 0; opacity: 0; margin-bottom: 0; }
+.app-header.compact .title { font-size: 1.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 2.25rem; }
+.app-header.compact .icon-btn { width: 2rem; height: 2rem; }
+
 /* ─ Pill clock ─ */
 .pill-clock { width: min(100%, 18.75rem); height: auto; display: block; margin: 0 auto; }
 @keyframes capIn {
