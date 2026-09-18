@@ -14,6 +14,8 @@
   --primary-fg: #FFFFFF;
   --accent: #F0655A;
   --ok: #34C38F;
+  --title: #3A5BE8;      /* "Remédios da" */
+  --title-name: #F0655A; /* pet name */
 }
 .dark {
   /* Apple watch-face dark: true black ground, warm greys, amber accent */
@@ -27,6 +29,8 @@
   --primary-fg: #1A1200;
   --accent: #F5B942;
   --ok: #3ED39C;
+  --title: #F4F4F5;
+  --title-name: #F5B942;
 }
 
 @layer base {

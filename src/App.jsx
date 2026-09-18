@@ -171,8 +171,8 @@ export default function App() {
             <button onClick={askName} className="eyebrow mb-1 text-left" title="Definir seu nome">
               {greeting}{!name && ' · seu nome?'}
             </button>
-            <h1 className="text-[2rem] leading-none font-semibold tracking-tight m-0" style={{ textWrap: "balance" }}>
-              {treatment.pet ? `Remédios da ${treatment.pet}` : 'Remédios'}
+            <h1 className="text-[2rem] leading-none font-bold tracking-tight m-0" style={{ textWrap: 'balance', color: 'var(--title)' }}>
+              {treatment.pet ? <>Remédios da <span style={{ color: 'var(--title-name)' }}>{treatment.pet}</span></> : 'Remédios'}
             </h1>
           </div>
           <div className="flex gap-2 mt-0.5">
