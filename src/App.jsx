@@ -239,7 +239,7 @@ export default function App() {
                 return (
                   <button key={day.date} onClick={() => setSelDate(day.date)}
                           className="flex-shrink-0 flex flex-col items-center gap-1 w-[2.5rem] py-2 rounded-2xl transition-colors"
-                          style={{ background: isSel ? 'var(--card)' : 'transparent' }}>
+                          style={{ background: isSel ? 'var(--card)' : 'transparent', boxShadow: isSel ? '0 1px 2px rgba(28,36,81,.06)' : 'none' }}>
                     <span className="text-[0.5625rem] uppercase tracking-wider" style={{ color: isSel ? 'var(--fg)' : 'var(--muted)' }}>
                       {DOW[day.dateObj.getDay()]}
                     </span>
@@ -247,7 +247,7 @@ export default function App() {
                       {day.dateObj.getDate()}
                     </span>
                     <span className="w-1.5 h-1.5 rounded-full"
-                          style={{ background: complete ? 'var(--ok)' : isToday ? 'var(--fg)' : 'transparent' }} />
+                          style={{ background: complete ? 'var(--ok)' : isToday ? 'var(--accent)' : 'transparent' }} />
                   </button>
                 );
               })}
@@ -274,10 +274,10 @@ export default function App() {
                 const isNext = nextSlot?.slot.key === slot.key;
                 const late = !done && slot.doses[0].at.getTime() < now.getTime() - 60 * 60000;
                 return (
-                  <div key={slot.key} className="card" style={{ outline: isNext ? '1.5px solid var(--fg)' : 'none' }}>
+                  <div key={slot.key} className="card" style={{ outline: isNext ? '1.5px solid var(--primary)' : 'none' }}>
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-lg font-semibold tabular-nums" style={{ color: done ? 'var(--muted)' : 'var(--fg)' }}>{slot.time}</span>
-                      <span className="eyebrow">
+                      <span className="eyebrow" style={{ color: isNext && !done ? 'var(--primary)' : late && !done ? 'var(--accent)' : undefined }}>
                         {done ? `dado${slotBy(slot, checked) ? ` · ${slotBy(slot, checked)}` : ''}` : isNext ? 'próxima' : late ? 'atrasada' : ''}
                       </span>
                     </div>

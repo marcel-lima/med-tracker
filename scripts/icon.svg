@@ -1,24 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <!-- App icon: 12 two-tone capsules around a clock face, hands at 8:00 (a typical dose time) -->
-  <rect width="512" height="512" fill="#FFFFFF"/>
+  <rect width="512" height="512" fill="#F2F3F7"/>
   <g id="ring">
     <!-- colors cycle through the app palette -->
-    <g transform="rotate(0 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#E5484D"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#C9282E"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
-    <g transform="rotate(30 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#2F80ED"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#1C5DBA"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
-    <g transform="rotate(60 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#F5C518"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#D9A600"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
-    <g transform="rotate(90 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#F5822B"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#D66512"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
-    <g transform="rotate(120 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#3DBF7A"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#2A9A5F"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
-    <g transform="rotate(150 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#9B6BE0"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#7A4BC4"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
-    <g transform="rotate(180 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#E5484D"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#C9282E"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
-    <g transform="rotate(210 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#2F80ED"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#1C5DBA"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
-    <g transform="rotate(240 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#F5C518"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#D9A600"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
-    <g transform="rotate(270 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#F5822B"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#D66512"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
-    <g transform="rotate(300 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#3DBF7A"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#2A9A5F"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
-    <g transform="rotate(330 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#9B6BE0"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#7A4BC4"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
+    <g transform="rotate(0 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#F0655A"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#D14A40"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
+    <g transform="rotate(30 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#3A5BE8"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#2743B8"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
+    <g transform="rotate(60 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#F5B800"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#D69C00"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
+    <g transform="rotate(90 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#F58B3C"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#D66E1F"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
+    <g transform="rotate(120 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#34C38F"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#249C70"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
+    <g transform="rotate(150 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#8A6CF6"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#6A4BD6"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
+    <g transform="rotate(180 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#F0655A"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#D14A40"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
+    <g transform="rotate(210 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#3A5BE8"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#2743B8"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
+    <g transform="rotate(240 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#F5B800"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#D69C00"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
+    <g transform="rotate(270 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#F58B3C"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#D66E1F"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
+    <g transform="rotate(300 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#34C38F"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#249C70"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
+    <g transform="rotate(330 256 256) translate(256 82)"><rect x="-19" y="-44" width="38" height="88" rx="19" fill="#8A6CF6"/><path d="M-19 0 L-19 -25 A19 19 0 0 1 19 -25 L19 0 Z" fill="#6A4BD6"/><rect x="-12" y="-34" width="5" height="68" rx="2.5" fill="rgba(255,255,255,.35)"/></g>
   </g>
   <!-- hands: 8:00 -->
-  <line x1="256" y1="274" x2="256" y2="150" stroke="#111111" stroke-width="22" stroke-linecap="round" transform="rotate(240 256 256)"/>
-  <line x1="256" y1="278" x2="256" y2="112" stroke="#111111" stroke-width="14" stroke-linecap="round"/>
-  <circle cx="256" cy="256" r="20" fill="#111111"/>
-  <circle cx="256" cy="256" r="7" fill="#FFFFFF"/>
+  <line x1="256" y1="274" x2="256" y2="150" stroke="#1C2451" stroke-width="22" stroke-linecap="round" transform="rotate(240 256 256)"/>
+  <line x1="256" y1="278" x2="256" y2="112" stroke="#1C2451" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="256" cy="256" r="20" fill="#1C2451"/>
+  <circle cx="256" cy="256" r="7" fill="#F2F3F7"/>
 </svg>

@@ -37,8 +37,8 @@ export default function PillClock({ meds = [], today = null, checked = {}, targe
   }, [meds, today, checked]);
 
   const empty = meds.length === 0;
-  const grey = dark ? '#2B2B2B' : '#E9E9E9';
-  const hand = dark ? '#F2F2F2' : '#111111';
+  const grey = dark ? '#2A3358' : '#DCE0EC';
+  const hand = dark ? '#E9ECF7' : '#1C2451';
 
   // Hands
   const tm = target ? t2m(target) : now.getHours() * 60 + now.getMinutes();
@@ -90,7 +90,7 @@ export default function PillClock({ meds = [], today = null, checked = {}, targe
         <line x1={C} y1={C + 10} x2={C} y2={C - 92} stroke={hand} strokeWidth="4" strokeLinecap="round"
               transform={`rotate(${minuteAngle} ${C} ${C})`} style={{ transition: 'transform .8s cubic-bezier(.2,.8,.2,1)' }} />
         <circle cx={C} cy={C} r="6" fill={hand} />
-        <circle cx={C} cy={C} r="2" fill={dark ? '#111' : '#fff'} />
+        <circle cx={C} cy={C} r="2" fill={dark ? '#12162A' : '#F2F3F7'} />
       </g>
     </svg>
   );

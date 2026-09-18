@@ -114,13 +114,13 @@ export default function NotifSheet({ open, onClose, reminders, onChangeReminders
         </div>
 
         {status === 'unsupported' && (
-          <Block icon={<AlertCircle size={20} color="#E5484D" />} title="Sem suporte"
+          <Block icon={<AlertCircle size={20} color="var(--accent)" />} title="Sem suporte"
                  body="Este navegador não recebe notificações push. No iPhone use o Safari; no Android, o Chrome." />
         )}
 
         {status === 'not-pwa' && (
           <div>
-            <Block icon={<Smartphone size={20} color="#F5822B" />} title="Instale o app primeiro"
+            <Block icon={<Smartphone size={20} color="var(--primary)" />} title="Instale o app primeiro"
                    body="No iPhone, as notificações só chegam com o app na tela de início." />
             <ol className="mt-4 space-y-2.5">
               {['Toque em Compartilhar (□↑) no Safari', 'Toque em "Adicionar à Tela de Início"', 'Toque em "Adicionar"', 'Abra o app pelo ícone e volte aqui'].map((step, i) => (
@@ -135,7 +135,7 @@ export default function NotifSheet({ open, onClose, reminders, onChangeReminders
         )}
 
         {status === 'denied' && (
-          <Block icon={<BellOff size={20} color="#E5484D" />} title="Permissão bloqueada"
+          <Block icon={<BellOff size={20} color="var(--accent)" />} title="Permissão bloqueada"
                  body="Libere em Ajustes → Notificações → Remédios → Permitir." />
         )}
 
@@ -146,14 +146,14 @@ export default function NotifSheet({ open, onClose, reminders, onChangeReminders
         {(status === 'idle' || status === 'granted') && (
           <>
             {active ? (
-              <Block icon={<CheckCircle size={20} color={reg && !reg.registered ? '#F5822B' : '#3DBF7A'} />} title="Lembretes ativos"
+              <Block icon={<CheckCircle size={20} color={reg && !reg.registered ? 'var(--accent)' : 'var(--ok)'} />} title="Lembretes ativos"
                      body={reg
                        ? (reg.registered
                           ? `Este aparelho está registrado. ${reg.devices} ${reg.devices === 1 ? 'aparelho recebe' : 'aparelhos recebem'} os avisos.`
                           : 'Este aparelho ainda não está registrado no servidor. Toque em Desativar e ative de novo.')
                        : 'Você recebe um aviso em cada dose, mesmo com o app fechado.'} />
             ) : (
-              <Block icon={<Bell size={20} color="#F5822B" />} title="Ativar lembretes"
+              <Block icon={<Bell size={20} color="var(--primary)" />} title="Ativar lembretes"
                      body={activateErr || 'Receba um aviso em cada dose, mesmo com o app fechado.'} />
             )}
 
@@ -189,7 +189,7 @@ export default function NotifSheet({ open, onClose, reminders, onChangeReminders
                   <Clock size={14} /> {scheduling ? 'Agendando…' : 'Testar em 1 min (pelo agendador)'}
                 </button>
                 {testMsg && (
-                  <p className="text-xs mt-3 leading-relaxed" style={{ color: testMsg.startsWith('Enviado') ? 'var(--muted)' : '#E5484D' }}>{testMsg}</p>
+                  <p className="text-xs mt-3 leading-relaxed" style={{ color: testMsg.startsWith('Enviado') ? 'var(--muted)' : 'var(--accent)' }}>{testMsg}</p>
                 )}
               </>
             ) : (

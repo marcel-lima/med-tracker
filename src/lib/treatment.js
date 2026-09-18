@@ -14,12 +14,12 @@
 // A "dose" is one med at one date+time. Key: `${date}|${time}|${medId}`.
 
 export const COLORS = {
-  red:    { a: '#E5484D', b: '#C9282E', ink: '#7A1A1E', soft: '#FDE5E6' },
-  blue:   { a: '#2F80ED', b: '#1C5DBA', ink: '#123A75', soft: '#E1ECFC' },
-  yellow: { a: '#F5C518', b: '#D9A600', ink: '#6B5200', soft: '#FFF5CC' },
-  orange: { a: '#F5822B', b: '#D66512', ink: '#6E3408', soft: '#FFE8D6' },
-  green:  { a: '#3DBF7A', b: '#2A9A5F', ink: '#155C36', soft: '#DFF5E8' },
-  purple: { a: '#9B6BE0', b: '#7A4BC4', ink: '#41256E', soft: '#EEE4FB' },
+  red:    { a: '#F0655A', b: '#D14A40', ink: '#7A2A24', soft: '#FDE4E1' },
+  blue:   { a: '#3A5BE8', b: '#2743B8', ink: '#182C7A', soft: '#E2E8FC' },
+  yellow: { a: '#F5B800', b: '#D69C00', ink: '#6B4F00', soft: '#FFF3C4' },
+  orange: { a: '#F58B3C', b: '#D66E1F', ink: '#6E3608', soft: '#FFE9D6' },
+  green:  { a: '#34C38F', b: '#249C70', ink: '#155C40', soft: '#DDF6EC' },
+  purple: { a: '#8A6CF6', b: '#6A4BD6', ink: '#3B2680', soft: '#ECE6FD' },
   feed:   { a: '#C9A27E', b: '#A8825F', ink: '#5A3E22', soft: '#F3E8DB' },
 };
 export const FEED_ID = '__feed';
