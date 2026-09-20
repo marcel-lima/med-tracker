@@ -37,7 +37,8 @@
   * { box-sizing: border-box; }
   /* Everything is rem-based, so this one rule scales type and spacing with the
      screen width: 16px on a 390px iPhone, ~17px on a 412px Android, up to 20px. */
-  html { background: var(--bg); font-size: clamp(16px, 4.1vw, 20px); }
+  html { background: var(--bg); font-size: calc(clamp(16px, 4.1vw, 26px) * var(--text-scale, 1)); }
+  @media (min-width: 900px) { html { font-size: calc(17px * var(--text-scale, 1)); } }
   body {
     margin: 0;
     background: var(--bg);

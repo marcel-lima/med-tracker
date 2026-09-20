@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  define: {
+    __BUILD__: JSON.stringify((process.env.GITHUB_SHA || process.env.VERCEL_GIT_COMMIT_SHA || 'dev').slice(0, 7)),
+  },
   plugins: [
     react(),
     VitePWA({

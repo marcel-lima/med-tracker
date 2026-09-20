@@ -10,6 +10,7 @@ import { ensureRegistered } from './lib/push';
 import PillClock from './components/PillClock';
 import TreatmentEditor from './components/TreatmentEditor';
 import NotifSheet from './components/NotifSheet';
+import DeviceSheet from './components/DeviceSheet';
 
 const prefersDark = () => window.matchMedia?.('(prefers-color-scheme: dark)').matches;
 
@@ -26,6 +27,8 @@ export default function App() {
   const [showNotif, setShowNotif] = useState(false);
   const [toast, setToast] = useState(null);
   const [name, setName] = useState(() => storage.get('mt_name') || ''); // this device's person
+  const [textScale, setTextScale] = useState(() => Number(storage.get('mt_text_scale')) || 1);
+  const [showDevice, setShowDevice] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const toastTimer = useRef(null);
 
@@ -52,6 +55,10 @@ export default function App() {
     storage.set('mt_theme', dark ? 'dark' : 'light');
     document.documentElement.classList.toggle('dark', dark);
   }, [dark]);
+  useEffect(() => {
+    storage.set('mt_text_scale', textScale);
+    document.documentElement.style.setProperty('--text-scale', String(textScale));
+  }, [textScale]);
 
   // Re-sync reminders with the server once a day (keeps continuous meds covered)
   useEffect(() => {
@@ -113,13 +120,8 @@ export default function App() {
     });
   }, [showToast]);
 
-  const askName = () => {
-    const v = window.prompt('Seu nome (aparece na saudação e em quem deu a dose):', name);
-    if (v === null) return;
-    const clean = v.trim().slice(0, 40);
-    setName(clean);
-    storage.set('mt_name', clean);
-  };
+  const askName = () => setShowDevice(true);
+  const changeName = (clean) => { setName(clean); storage.set('mt_name', clean); };
 
   useEffect(() => {
     Promise.resolve().then(reconcile);
@@ -349,6 +351,10 @@ export default function App() {
                 <Plus size={14} /> Adicionar remédio
               </button>
             </div>
+
+            <p className="text-center text-[0.625rem] mt-6 tabular-nums" style={{ color: 'var(--muted)', opacity: .7 }}>
+              v{__BUILD__} · {window.innerWidth}×{window.innerHeight} @{Math.round(window.devicePixelRatio * 100) / 100} · texto {textScale}×
+            </p>
           </>
         )}
       </div>
@@ -357,6 +363,9 @@ export default function App() {
         <TreatmentEditor initial={treatment} startWithNew={showEditor === 'new'}
                          onSave={handleSave} onCancel={() => setShowEditor(false)} onEnd={handleEnd} />
       )}
+
+      <DeviceSheet key={showDevice ? 'open' : 'closed'} open={showDevice} onClose={() => setShowDevice(false)}
+                   name={name} onChangeName={changeName} textScale={textScale} onChangeTextScale={setTextScale} />
 
       <NotifSheet open={showNotif} onClose={() => setShowNotif(false)}
                   reminders={treatment.reminders} onChangeReminders={handleReminders} />
