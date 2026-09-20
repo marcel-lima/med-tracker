@@ -3,8 +3,8 @@ import { X } from 'lucide-react';
 
 const TEXT_SCALES = [
   { label: 'normal', value: 1 },
-  { label: 'maior', value: 1.2 },
-  { label: 'máximo', value: 1.45 },
+  { label: 'maior', value: 1.25 },
+  { label: 'grande', value: 1.5 },
 ];
 
 /**
@@ -49,7 +49,7 @@ export default function DeviceSheet({ open, onClose, name, onChangeName, textSca
             ))}
           </div>
           <span className="block text-xs mt-2" style={{ color: 'var(--muted)' }}>
-            Só neste aparelho. Muda na hora, para você conferir.
+            Só neste aparelho. Muda na hora, para você conferir. Em Android já começa em "maior".
           </span>
         </div>
 

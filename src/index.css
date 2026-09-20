@@ -147,6 +147,16 @@
   border-bottom: 1px solid transparent;
   transition: padding .25s ease, border-color .25s ease;
 }
+/* Greeting and buttons share the first row; the title gets the full width below.
+   Once compact, the buttons drop beside the (single-line) title. */
+.app-header .header-grid {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: .75rem;
+  grid-template-areas: "greet btns" "title title"; align-items: start;
+}
+.app-header .greet { grid-area: greet; align-self: center; }
+.app-header .title { grid-area: title; }
+.app-header .btns { grid-area: btns; }
+.app-header.compact .header-grid { grid-template-areas: "greet btns" "title btns"; align-items: center; }
 .app-header .greet { max-height: 2rem; opacity: 1; margin-bottom: .25rem; overflow: hidden; transition: max-height .25s ease, opacity .2s ease, margin .25s ease; }
 .app-header .title { font-size: 2rem; text-wrap: balance; transition: font-size .25s ease; }
 .app-header.compact {
@@ -155,8 +165,10 @@
   border-bottom-color: var(--line);
 }
 .app-header.compact .greet { max-height: 0; opacity: 0; margin-bottom: 0; }
-.app-header.compact .title { font-size: 1.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 2.25rem; }
+.app-header.compact .title { font-size: min(1.25rem, 5.5vw); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 2.25rem; }
 .app-header.compact .icon-btn { width: 2rem; height: 2rem; }
+/* Once scrolled, keep only the two everyday buttons so the title still fits at large text sizes */
+.app-header.compact .btn-secondary { display: none; }
 
 /* ─ Pill clock ─ */
 .pill-clock { width: min(100%, 18.75rem); height: auto; display: block; margin: 0 auto; }

@@ -14,6 +14,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script>
+      // Apply this phone's saved text size before the first paint (no size jump).
+      try {
+        var s = Number(JSON.parse(localStorage.getItem('mt_text_scale')));
+        if (!s) s = /Android/i.test(navigator.userAgent) ? 1.25 : 1;
+        document.documentElement.style.setProperty('--text-scale', String(s));
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

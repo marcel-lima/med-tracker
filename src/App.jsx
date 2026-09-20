@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Check, Sun, Moon, Bell, Pencil, Plus, PawPrint } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Sun, Moon, Bell, Pencil, Plus, PawPrint, ALargeSmall } from 'lucide-react';
 import { storage } from './lib/storage';
 import {
   COLORS, FEED_ID, buildDays, buildReminders, emptyTreatment, isActive, totalDays, findNextSlot,
@@ -11,6 +11,8 @@ import PillClock from './components/PillClock';
 import TreatmentEditor from './components/TreatmentEditor';
 import NotifSheet from './components/NotifSheet';
 import DeviceSheet from './components/DeviceSheet';
+
+const defaultTextScale = () => (/Android/i.test(navigator.userAgent) ? 1.25 : 1);
 
 const prefersDark = () => window.matchMedia?.('(prefers-color-scheme: dark)').matches;
 
@@ -27,7 +29,9 @@ export default function App() {
   const [showNotif, setShowNotif] = useState(false);
   const [toast, setToast] = useState(null);
   const [name, setName] = useState(() => storage.get('mt_name') || ''); // this device's person
-  const [textScale, setTextScale] = useState(() => Number(storage.get('mt_text_scale')) || 1);
+  // Android (One UI) renders system text noticeably larger than iOS at the same
+  // CSS size, so phones without a saved choice start one step up there.
+  const [textScale, setTextScale] = useState(() => Number(storage.get('mt_text_scale')) || defaultTextScale());
   const [showDevice, setShowDevice] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const toastTimer = useRef(null);
@@ -184,22 +188,21 @@ export default function App() {
     <div className="min-h-screen">
       {/* ── Header: sticky, collapses to one line once the page scrolls ── */}
       <header className={`app-header ${scrolled ? 'compact' : ''}`}>
-        <div className="max-w-lg mx-auto px-5 flex items-start justify-between">
-          <div className="min-w-0">
-            <button onClick={askName} className="greet eyebrow text-left block" title="Definir seu nome">
-              {greeting}{!name && ' · seu nome?'}
-            </button>
-            <h1 className="title leading-none font-bold tracking-tight m-0" style={{ color: 'var(--title)' }}>
-              {treatment.pet ? <>Remédios da <span style={{ color: 'var(--title-name)' }}>{treatment.pet}</span></> : 'Remédios'}
-            </h1>
-          </div>
-          <div className="flex gap-2 flex-shrink-0">
+        <div className="max-w-lg mx-auto px-5 header-grid">
+          <button onClick={askName} className="greet eyebrow text-left block" title="Definir seu nome">
+            {greeting}{!name && ' · seu nome?'}
+          </button>
+          <h1 className="title leading-none font-bold tracking-tight m-0 min-w-0" style={{ color: 'var(--title)' }}>
+            {treatment.pet ? <>Remédios da <span style={{ color: 'var(--title-name)' }}>{treatment.pet}</span></> : 'Remédios'}
+          </h1>
+          <div className="btns flex gap-2 flex-shrink-0">
             {active && (
-              <button onClick={() => setShowEditor(true)} className="icon-btn" aria-label="Editar tratamento">
+              <button onClick={() => setShowEditor(true)} className="icon-btn btn-secondary" aria-label="Editar tratamento">
                 <Pencil size={15} />
               </button>
             )}
             <button onClick={() => setShowNotif(true)} className="icon-btn" aria-label="Lembretes"><Bell size={15} /></button>
+            <button onClick={() => setShowDevice(true)} className="icon-btn btn-secondary" aria-label="Tamanho do texto"><ALargeSmall size={17} /></button>
             <button onClick={() => setDark(d => !d)} className="icon-btn" aria-label="Tema">
               {dark ? <Sun size={15} /> : <Moon size={15} />}
             </button>
@@ -315,7 +318,7 @@ export default function App() {
                               {on && <Check size={13} color="#fff" strokeWidth={3} />}
                             </span>
                             <span className="flex-1 min-w-0" style={{ opacity: on ? 0.45 : 1 }}>
-                              <span className="text-sm font-medium truncate flex items-center gap-1.5"
+                              <span className="text-sm font-medium flex items-center gap-1.5 break-words"
                                     style={{ textDecoration: on ? 'line-through' : 'none' }}>
                                 {med.id === FEED_ID && <PawPrint size={13} style={{ color: c.a }} />}{med.name}
                               </span>
@@ -341,7 +344,7 @@ export default function App() {
                 {meds.map(m => (
                   <div key={m.id} className="flex items-center gap-3">
                     <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: COLORS[m.color].a }} />
-                    <span className="text-sm font-medium flex-1 truncate">{m.name}</span>
+                    <span className="text-sm font-medium flex-1 min-w-0 break-words">{m.name}</span>
                     <span className="text-xs" style={{ color: 'var(--muted)' }}>{m.id === FEED_ID ? '' : m.dose || foodNote(m, treatment.feedings) || ''}</span>
                     <span className="text-[0.6875rem] tabular-nums" style={{ color: 'var(--muted)' }}>{m.times.join(' · ')}</span>
                   </div>
