@@ -4,7 +4,8 @@
 //   feedings: ['08:00', '20:00'],                 // meal times (optional)
 //   meds: [{ id, name, dose, times: ['08:00', '20:00'], days: 7, color: 'red',
 //            food: 'none' | 'before' | 'with' | 'after', foodMin: 30,
-//            foodTimes: ['08:00'] }],   // which meals apply; [] = all
+//            foodTimes: ['08:00'],      // which meals apply; [] = all
+//            startDate: 'YYYY-MM-DD' }], // optional: this med began later than the treatment
 //   reminders: { offsetMin: 0, repeatMin: 30 },   // 0 = off
 // }
 // When med.food !== 'none', med.times are derived from feedings (± foodMin).
@@ -97,14 +98,26 @@ export function foodNote(med, feedings = []) {
   return `${med.foodMin} min ${med.food === 'before' ? 'antes' : 'depois'} da ração${which}`;
 }
 
-// Real meds + the virtual meal "med", all with effective times.
+// First day a med is given: its own start when set, else the treatment's.
+export const medStart = (t, med) => med.startDate || t.startDate;
+
+// Earliest start across meds (the treatment's own start, or earlier if a med says so).
+export function firstDay(t) {
+  if (!isActive(t)) return t?.startDate;
+  return t.meds.reduce((min, m) => (medStart(t, m) < min ? medStart(t, m) : min), t.startDate);
+}
+
+const daysBetween = (a, b) => Math.round((fromISODate(b) - fromISODate(a)) / 86400000);
+
+// Real meds + the virtual meal "med", all with effective times and start dates.
+// Meals run from the earliest med start to the latest med end.
 export function allMeds(t) {
   if (!isActive(t)) return [];
   const feedings = t.feedings || [];
-  const meds = t.meds.map(m => ({ ...m, times: effectiveTimes(m, feedings) }));
+  const meds = t.meds.map(m => ({ ...m, startDate: medStart(t, m), times: effectiveTimes(m, feedings) }));
   if (feedings.length) {
     const td = totalDays(t);
-    meds.push({ id: FEED_ID, name: FEED_NAME, dose: '', times: [...feedings].sort((a, b) => t2m(a) - t2m(b)), days: td === Infinity ? 0 : td, color: 'feed', food: 'none', foodMin: 0 });
+    meds.push({ id: FEED_ID, name: FEED_NAME, dose: '', startDate: firstDay(t), times: [...feedings].sort((a, b) => t2m(a) - t2m(b)), days: td === Infinity ? 0 : td, color: 'feed', food: 'none', foodMin: 0 });
   }
   return meds;
 }
@@ -140,11 +153,13 @@ export function isActive(t) {
 
 export const isForever = med => Number(med.days) === 0;
 
-// Longest med duration in days; Infinity when any med is continuous.
+// Whole span in days, from the earliest med start to the latest med end;
+// Infinity when any med is continuous.
 export function totalDays(t) {
   if (!isActive(t)) return 0;
   if (t.meds.some(isForever)) return Infinity;
-  return Math.max(...t.meds.map(m => Number(m.days) || 1));
+  const first = firstDay(t);
+  return Math.max(...t.meds.map(m => daysBetween(first, medStart(t, m)) + (Number(m.days) || 1)));
 }
 
 // Number of days to generate for a med: its own, or up to the horizon.
@@ -168,9 +183,9 @@ export function doseDate(date, time) {
 // Every dose of the treatment, in chronological order.
 export function buildDoses(t) {
   if (!isActive(t)) return [];
-  const start = fromISODate(t.startDate);
   const out = [];
   allMeds(t).forEach(med => {
+    const start = fromISODate(med.startDate);
     const days = spanDays(med, start);
     for (let i = 0; i < days; i++) {
       const d = new Date(start); d.setDate(d.getDate() + i);
@@ -264,6 +279,9 @@ export function buildReminders(t) {
 export function validate(t) {
   const errs = [];
   if (!t.startDate) errs.push('Escolha a data de início.');
+  t.meds.forEach((m, i) => {
+    if (m.startDate && !/^\d{4}-\d{2}-\d{2}$/.test(m.startDate)) errs.push(`${m.name || `Remédio ${i + 1}`}: data de início inválida.`);
+  });
   if (!t.meds.length) errs.push('Adicione pelo menos um remédio.');
   t.meds.forEach((m, i) => {
     if (!m.name.trim()) errs.push(`Remédio ${i + 1}: falta o nome.`);

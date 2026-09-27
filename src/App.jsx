@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Check, Sun, Moon, Bell, Pencil, Plus, PawPri
 import { storage } from './lib/storage';
 import {
   COLORS, FEED_ID, buildDays, buildReminders, emptyTreatment, isActive, totalDays, findNextSlot,
-  dayProgress, medsForSlot, medById, allMeds, foodNote, formatDate, todayISO, DOW,
+  dayProgress, medsForSlot, medById, allMeds, foodNote, formatDate, todayISO, fromISODate, DOW,
 } from './lib/treatment';
 import { saveTreatment, clearTreatment, fetchTreatment, setChecked as syncChecked } from './lib/api';
 import { ensureRegistered } from './lib/push';
@@ -344,7 +344,12 @@ export default function App() {
                 {meds.map(m => (
                   <div key={m.id} className="flex items-center gap-3">
                     <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: COLORS[m.color].a }} />
-                    <span className="text-sm font-medium flex-1 min-w-0 break-words">{m.name}</span>
+                    <span className="flex-1 min-w-0">
+                      <span className="text-sm font-medium block break-words">{m.name}</span>
+                      {m.id !== FEED_ID && m.startDate !== treatment.startDate && (
+                        <span className="block text-[0.6875rem]" style={{ color: 'var(--muted)' }}>desde {formatDate(fromISODate(m.startDate))}</span>
+                      )}
+                    </span>
                     <span className="text-xs" style={{ color: 'var(--muted)' }}>{m.id === FEED_ID ? '' : m.dose || foodNote(m, treatment.feedings) || ''}</span>
                     <span className="text-[0.6875rem] tabular-nums" style={{ color: 'var(--muted)' }}>{m.times.join(' · ')}</span>
                   </div>

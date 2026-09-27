@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, Plus, Trash2, PawPrint } from 'lucide-react';
-import { COLORS, COLOR_ORDER, FREQ_PRESETS, FOOD_OPTIONS, newMed, validate, t2m, effectiveTimes, deriveTimes, inferFreq, mealsFor, mealLabel } from '../lib/treatment';
+import { COLORS, COLOR_ORDER, FREQ_PRESETS, FOOD_OPTIONS, newMed, validate, t2m, effectiveTimes, deriveTimes, inferFreq, mealsFor, mealLabel, todayISO, fromISODate, formatDate } from '../lib/treatment';
 import TimePicker from './TimePicker';
 
 const DAY_PRESETS = [3, 5, 7, 10, 14, 30, 45, 60];
@@ -14,6 +14,8 @@ function parseDose(dose = '') {
   return { qty: dose.trim(), unit: '' };
 }
 const joinDose = (qty, unit) => `${qty.trim()} ${unit.trim()}`.trim();
+// A med added mid-treatment starts today; undefined = same day as the treatment.
+const laterStart = treatmentStart => (todayISO() > (treatmentStart || '') ? todayISO() : undefined);
 
 
 export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, startWithNew = false }) {
@@ -23,7 +25,7 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, star
     else if (startWithNew) {
       const used = meds.map(m => m.color);
       const color = COLOR_ORDER.find(c => !used.includes(c)) || COLOR_ORDER[meds.length % COLOR_ORDER.length];
-      meds.push({ ...newMed(meds.length), color });
+      meds.push({ ...newMed(meds.length), color, startDate: laterStart(initial.startDate) });
     }
     return { ...initial, feedings: [...(initial.feedings || [])], meds };
   });
@@ -58,7 +60,7 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, star
   const addMed = () => setT(prev => {
     const used = prev.meds.map(m => m.color);
     const color = COLOR_ORDER.find(c => !used.includes(c)) || COLOR_ORDER[prev.meds.length % COLOR_ORDER.length];
-    return { ...prev, meds: [...prev.meds, { ...newMed(prev.meds.length), color }] };
+    return { ...prev, meds: [...prev.meds, { ...newMed(prev.meds.length), color, startDate: laterStart(prev.startDate) }] };
   });
 
   const removeMed = id => setT(prev => ({ ...prev, meds: prev.meds.filter(m => m.id !== id) }));
@@ -74,6 +76,7 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, star
         name: m.name.trim(),
         dose: m.dose.trim(),
         days: m.days === '' ? 1 : Math.max(0, Number(m.days) || 0),
+        startDate: m.startDate && m.startDate !== t.startDate ? m.startDate : undefined,
         foodMin: Math.max(0, Number(m.foodMin) || 0),
         foodTimes: (m.foodTimes || []).filter(f => feedings.includes(f)),
         times: m.food !== 'none' && feedings.length ? effectiveTimes(m, feedings) : [...m.times].sort((a, b) => t2m(a) - t2m(b)),
@@ -277,6 +280,22 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, star
                 </div>
                 </>)}
                 </>)}
+
+                <p className="eyebrow mb-2">começou em</p>
+                <div className="flex flex-wrap items-center gap-1.5 mb-4">
+                  <button onClick={() => patchMed(med.id, { startDate: undefined })}
+                          className={`chip ${!med.startDate || med.startDate === t.startDate ? 'chip-on' : ''}`}>início do tratamento</button>
+                  <button onClick={() => patchMed(med.id, { startDate: todayISO() })}
+                          className={`chip ${med.startDate === todayISO() && todayISO() !== t.startDate ? 'chip-on' : ''}`}>hoje</button>
+                  <input type="date" aria-label="Data em que começou este remédio" className="input w-auto" style={{ height: '2.125rem', fontSize: '0.8125rem' }}
+                         value={med.startDate || t.startDate}
+                         onChange={e => patchMed(med.id, { startDate: e.target.value || undefined })} />
+                </div>
+                {med.startDate && med.startDate !== t.startDate && (
+                  <p className="text-xs -mt-2 mb-4" style={{ color: 'var(--muted)' }}>
+                    Aparece só a partir de {formatDate(fromISODate(med.startDate))}; dias anteriores não ficam pendentes.
+                  </p>
+                )}
 
                 <p className="eyebrow mb-2">duração</p>
                 <div className="flex flex-wrap items-center gap-1.5">
