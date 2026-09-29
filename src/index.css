@@ -137,6 +137,9 @@
   .safe-bottom { padding-bottom: calc(2.5rem + env(safe-area-inset-bottom, 0px)); }
 }
 
+/* ─ Slot split by pet ─ */
+.pet-block + .pet-block { margin-top: .5rem; padding-top: .875rem; border-top: 1px solid var(--line); }
+
 /* ─ Sticky header ─ */
 .app-header {
   position: sticky; top: 0; z-index: 30;

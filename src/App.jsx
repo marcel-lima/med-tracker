@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Check, Sun, Moon, Bell, Pencil, Plus, PawPrint, ALargeSmall } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Sun, Moon, Bell, Pencil, Plus, PawPrint, ALargeSmall, Dog } from 'lucide-react';
 import { storage } from './lib/storage';
 import {
   COLORS, buildDays, buildReminders, emptyTreatment, isActive, totalDays, findNextSlot,
@@ -331,29 +331,43 @@ export default function App() {
                       </span>
                     </div>
                     <div className="flex flex-col gap-2.5">
-                      {slot.doses.map(dose => {
-                        const med = medById(treatment, dose.medId);
-                        if (!med) return null;
-                        const c = COLORS[med.color];
-                        const on = !!checked[dose.key];
+                      {/* With several pets, each slot is split into a block per pet */}
+                      {(multi && !filter ? pets : [null]).map(group => {
+                        const doses = slot.doses.filter(d => !group || (medById(treatment, d.medId)?.petId === group.id));
+                        if (!doses.length) return null;
                         return (
-                          <button key={dose.key} onClick={() => toggleDose(dose, selDay)}
-                                  className="flex items-center gap-3 text-left w-full">
-                            <span className="check" style={{ background: on ? c.a : undefined, borderColor: on ? c.a : undefined }}>
-                              {on && <Check size={13} color="#fff" strokeWidth={3} />}
-                            </span>
-                            <span className="flex-1 min-w-0" style={{ opacity: on ? 0.45 : 1 }}>
-                              <span className="text-sm font-medium flex items-center gap-1.5 break-words"
-                                    style={{ textDecoration: on ? 'line-through' : 'none' }}>
-                                {isFeed(med.id) && <PawPrint size={13} style={{ color: c.a }} />}{med.name}
-                              </span>
-                              {(() => {
-                                const note = [multi && !filter ? petName(med) : null, foodNote(med, feedingsFor(treatment, med))].filter(Boolean).join(' · ');
-                                return note ? <span className="block text-[0.6875rem]" style={{ color: 'var(--muted)' }}>{note}</span> : null;
-                              })()}
-                            </span>
-                            <span className="text-xs flex-shrink-0" style={{ color: 'var(--muted)' }}>{med.dose}</span>
-                          </button>
+                          <div key={group?.id || 'all'} className={group ? 'pet-block' : ''}>
+                            {group && (
+                              <p className="eyebrow mb-2 flex items-center gap-1.5" style={{ color: 'var(--fg)' }}>
+                                <Dog size={12} style={{ color: 'var(--muted)' }} />{group.name || 'pet'}
+                              </p>
+                            )}
+                            <div className="flex flex-col gap-2.5">
+                              {doses.map(dose => {
+                                const med = medById(treatment, dose.medId);
+                                if (!med) return null;
+                                const c = COLORS[med.color];
+                                const on = !!checked[dose.key];
+                                const note = foodNote(med, feedingsFor(treatment, med));
+                                return (
+                                  <button key={dose.key} onClick={() => toggleDose(dose, selDay)}
+                                          className="flex items-center gap-3 text-left w-full">
+                                    <span className="check" style={{ background: on ? c.a : undefined, borderColor: on ? c.a : undefined }}>
+                                      {on && <Check size={13} color="#fff" strokeWidth={3} />}
+                                    </span>
+                                    <span className="flex-1 min-w-0" style={{ opacity: on ? 0.45 : 1 }}>
+                                      <span className="text-sm font-medium flex items-center gap-1.5 break-words"
+                                            style={{ textDecoration: on ? 'line-through' : 'none' }}>
+                                        {isFeed(med.id) && <PawPrint size={13} style={{ color: c.a }} />}{med.name}
+                                      </span>
+                                      {note && <span className="block text-[0.6875rem]" style={{ color: 'var(--muted)' }}>{note}</span>}
+                                    </span>
+                                    <span className="text-xs flex-shrink-0" style={{ color: 'var(--muted)' }}>{med.dose}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
                         );
                       })}
                     </div>
