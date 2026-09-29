@@ -167,6 +167,8 @@
 .app-header.compact .greet { max-height: 0; opacity: 0; margin-bottom: 0; }
 .app-header.compact .title { font-size: min(1.25rem, 5.5vw); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 2.25rem; }
 .app-header.compact .icon-btn { width: 2rem; height: 2rem; }
+/* With several pets, the compact title keeps just the names ("Kika e Bolt") */
+.app-header.compact.multi .t-prefix, .app-header.compact.multi .t-art { display: none; }
 /* Once scrolled, keep only the two everyday buttons so the title still fits at large text sizes */
 .app-header.compact .btn-secondary { display: none; }
 

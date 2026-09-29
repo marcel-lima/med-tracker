@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Check, Sun, Moon, Bell, Pencil, Plus, PawPrint, ALargeSmall } from 'lucide-react';
 import { storage } from './lib/storage';
 import {
-  COLORS, FEED_ID, buildDays, buildReminders, emptyTreatment, isActive, totalDays, findNextSlot,
+  COLORS, buildDays, buildReminders, emptyTreatment, isActive, totalDays, findNextSlot,
   dayProgress, medsForSlot, medById, allMeds, foodNote, formatDate, todayISO, fromISODate, DOW,
+  normalize, petsOf, petsTitle, forPet, isFeed, petOfMed, feedingsFor,
 } from './lib/treatment';
 import { saveTreatment, clearTreatment, fetchTreatment, setChecked as syncChecked } from './lib/api';
 import { ensureRegistered } from './lib/push';
@@ -21,7 +22,8 @@ export default function App() {
     const saved = storage.get('mt_theme');
     return saved ? saved === 'dark' : prefersDark();
   });
-  const [treatment, setTreatment] = useState(() => storage.get('mt_treatment') || emptyTreatment());
+  const [treatment, setTreatment] = useState(() => normalize(storage.get('mt_treatment') || emptyTreatment()));
+  const [petFilter, setPetFilter] = useState(() => storage.get('mt_pet') || null); // pet id or null = everyone
   const [checked, setChecked] = useState(() => storage.get('mt_checked_v2') || {});
   const [selDate, setSelDate] = useState(todayISO());
   const [now, setNow] = useState(new Date());
@@ -37,8 +39,13 @@ export default function App() {
   const toastTimer = useRef(null);
 
   const active = isActive(treatment);
-  const days = useMemo(() => buildDays(treatment), [treatment]);
-  const meds = useMemo(() => allMeds(treatment), [treatment]);
+  const pets = petsOf(treatment);
+  const multi = pets.length > 1;
+  const filter = multi && pets.some(p => p.id === petFilter) ? petFilter : null;
+  const viewT = useMemo(() => forPet(treatment, filter), [treatment, filter]);
+  const days = useMemo(() => buildDays(viewT), [viewT]);
+  const meds = useMemo(() => allMeds(viewT), [viewT]);
+  const petName = med => petOfMed(treatment, med).name || 'pet';
   const today = todayISO();
   const todayDay = days.find(d => d.date === today) || null;
   const selIdx = useMemo(() => {
@@ -55,6 +62,7 @@ export default function App() {
   // ─ Persistence ─
   useEffect(() => { storage.set('mt_treatment', treatment); }, [treatment]);
   useEffect(() => { storage.set('mt_checked_v2', checked); }, [checked]);
+  useEffect(() => { storage.set('mt_pet', petFilter); }, [petFilter]);
   useEffect(() => {
     storage.set('mt_theme', dark ? 'dark' : 'light');
     document.documentElement.classList.toggle('dark', dark);
@@ -114,7 +122,7 @@ export default function App() {
       const localAt = Number(local.updatedAt) || 0;
       if (isActive(local) && localAt >= serverAt) return local;
       showToast(isActive(local) ? 'tratamento atualizado' : 'tratamento recuperado');
-      return data.treatment;
+      return normalize(data.treatment);
     });
     setChecked(local => {
       const merged = { ...local };
@@ -187,13 +195,20 @@ export default function App() {
   return (
     <div className="min-h-screen">
       {/* ── Header: sticky, collapses to one line once the page scrolls ── */}
-      <header className={`app-header ${scrolled ? 'compact' : ''}`}>
+      <header className={`app-header ${scrolled ? 'compact' : ''} ${multi && !filter ? 'multi' : ''}`}>
         <div className="max-w-lg mx-auto px-5 header-grid">
           <button onClick={askName} className="greet eyebrow text-left block" title="Definir seu nome">
             {greeting}{!name && ' · seu nome?'}
           </button>
           <h1 className="title leading-none font-bold tracking-tight m-0 min-w-0" style={{ color: 'var(--title)' }}>
-            {treatment.pet ? <>Remédios da <span style={{ color: 'var(--title-name)' }}>{treatment.pet}</span></> : 'Remédios'}
+            <span className="t-prefix">Remédios</span>
+            {petsTitle(filter ? pets.filter(p => p.id === filter) : pets).map((p, i, arr) => (
+              <span key={p.name + i}>
+                {i > 0 && (i === arr.length - 1 ? ' e ' : ', ')}
+                <span className="t-art">{i === 0 ? ' ' : ''}{p.article} </span>
+                <span style={{ color: 'var(--title-name)' }}>{p.name}</span>
+              </span>
+            ))}
           </h1>
           <div className="btns flex gap-2 flex-shrink-0">
             {active && (
@@ -211,6 +226,16 @@ export default function App() {
       </header>
 
       <div className="max-w-lg mx-auto px-5 pt-2 safe-bottom">
+
+        {/* ── Pet filter (only with more than one pet) ── */}
+        {active && multi && (
+          <div className="flex flex-wrap justify-center gap-1.5 mb-5">
+            <button onClick={() => setPetFilter(null)} className={`chip ${!filter ? 'chip-on' : ''}`}>todos</button>
+            {pets.map(p => (
+              <button key={p.id} onClick={() => setPetFilter(p.id)} className={`chip ${filter === p.id ? 'chip-on' : ''}`}>{p.name || 'pet'}</button>
+            ))}
+          </div>
+        )}
 
         {/* ── Clock ── */}
         <div className="mb-5">
@@ -240,7 +265,7 @@ export default function App() {
                     {nextMeds.map(m => (
                       <span key={m.id} className="text-xs px-2.5 py-1 rounded-full font-medium inline-flex items-center gap-1"
                             style={{ background: COLORS[m.color].soft, color: COLORS[m.color].ink }}>
-                        {m.id === FEED_ID && <PawPrint size={11} />}{m.name}
+                        {isFeed(m.id) && <PawPrint size={11} />}{multi && !filter ? `${petName(m)} · ` : ''}{m.name}
                       </span>
                     ))}
                   </div>
@@ -283,7 +308,7 @@ export default function App() {
                 <button onClick={() => setSelDate(days[Math.max(0, selIdx - 1)].date)} disabled={selIdx === 0}
                         className="icon-btn disabled:opacity-25" aria-label="Dia anterior"><ChevronLeft size={16} /></button>
                 <div className="flex-1 min-w-0 text-center">
-                  <p className="eyebrow">{totalDays(treatment) === Infinity ? `dia ${selIdx + 1}` : `dia ${selIdx + 1} de ${days.length}`}</p>
+                  <p className="eyebrow">{totalDays(viewT) === Infinity ? `dia ${selIdx + 1}` : `dia ${selIdx + 1} de ${days.length}`}</p>
                   <p className="text-sm font-medium">{formatDate(selDay.dateObj)}</p>
                 </div>
                 <button onClick={() => setSelDate(days[Math.min(days.length - 1, selIdx + 1)].date)} disabled={selIdx === days.length - 1}
@@ -320,9 +345,12 @@ export default function App() {
                             <span className="flex-1 min-w-0" style={{ opacity: on ? 0.45 : 1 }}>
                               <span className="text-sm font-medium flex items-center gap-1.5 break-words"
                                     style={{ textDecoration: on ? 'line-through' : 'none' }}>
-                                {med.id === FEED_ID && <PawPrint size={13} style={{ color: c.a }} />}{med.name}
+                                {isFeed(med.id) && <PawPrint size={13} style={{ color: c.a }} />}{med.name}
                               </span>
-                              {foodNote(med, treatment.feedings) && <span className="block text-[0.6875rem]" style={{ color: 'var(--muted)' }}>{foodNote(med, treatment.feedings)}</span>}
+                              {(() => {
+                                const note = [multi && !filter ? petName(med) : null, foodNote(med, feedingsFor(treatment, med))].filter(Boolean).join(' · ');
+                                return note ? <span className="block text-[0.6875rem]" style={{ color: 'var(--muted)' }}>{note}</span> : null;
+                              })()}
                             </span>
                             <span className="text-xs flex-shrink-0" style={{ color: 'var(--muted)' }}>{med.dose}</span>
                           </button>
@@ -337,21 +365,26 @@ export default function App() {
             {/* ── Treatment summary ── */}
             <div className="card mt-6">
               <div className="flex items-center justify-between mb-4">
-                <p className="eyebrow">tratamento · {totalDays(treatment) === Infinity ? 'contínuo' : `${totalDays(treatment)} dias`}</p>
+                <p className="eyebrow">tratamento · {totalDays(viewT) === Infinity ? 'contínuo' : `${totalDays(viewT)} dias`}</p>
                 <button onClick={() => setShowEditor(true)} className="text-xs font-medium">editar</button>
               </div>
               <div className="flex flex-col gap-3">
-                {meds.map(m => (
-                  <div key={m.id} className="flex items-center gap-3">
-                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: COLORS[m.color].a }} />
-                    <span className="flex-1 min-w-0">
-                      <span className="text-sm font-medium block break-words">{m.name}</span>
-                      {m.id !== FEED_ID && m.startDate !== treatment.startDate && (
-                        <span className="block text-[0.6875rem]" style={{ color: 'var(--muted)' }}>desde {formatDate(fromISODate(m.startDate))}</span>
-                      )}
-                    </span>
-                    <span className="text-xs" style={{ color: 'var(--muted)' }}>{m.id === FEED_ID ? '' : m.dose || foodNote(m, treatment.feedings) || ''}</span>
-                    <span className="text-[0.6875rem] tabular-nums" style={{ color: 'var(--muted)' }}>{m.times.join(' · ')}</span>
+                {(multi && !filter ? pets : [null]).map(group => (
+                  <div key={group?.id || 'all'} className="flex flex-col gap-3">
+                    {group && <p className="eyebrow mt-1" style={{ color: 'var(--fg)' }}>{group.name || 'pet'}</p>}
+                    {meds.filter(m => !group || m.petId === group.id).map(m => (
+                      <div key={m.id} className="flex items-center gap-3">
+                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: COLORS[m.color].a }} />
+                        <span className="flex-1 min-w-0">
+                          <span className="text-sm font-medium block break-words">{m.name}</span>
+                          {!isFeed(m.id) && m.startDate !== treatment.startDate && (
+                            <span className="block text-[0.6875rem]" style={{ color: 'var(--muted)' }}>desde {formatDate(fromISODate(m.startDate))}</span>
+                          )}
+                        </span>
+                        <span className="text-xs" style={{ color: 'var(--muted)' }}>{isFeed(m.id) ? '' : m.dose || foodNote(m, feedingsFor(treatment, m)) || ''}</span>
+                        <span className="text-[0.6875rem] tabular-nums" style={{ color: 'var(--muted)' }}>{m.times.join(' · ')}</span>
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
@@ -368,7 +401,7 @@ export default function App() {
       </div>
 
       {showEditor && (
-        <TreatmentEditor initial={treatment} startWithNew={showEditor === 'new'}
+        <TreatmentEditor initial={treatment} startWithNew={showEditor === 'new'} newPetId={filter}
                          onSave={handleSave} onCancel={() => setShowEditor(false)} onEnd={handleEnd} />
       )}
 

@@ -1,15 +1,16 @@
 // ─── Treatment model ─────────────────────────────────────────────────────────
 // treatment = {
 //   startDate: 'YYYY-MM-DD',
-//   feedings: ['08:00', '20:00'],                 // meal times (optional)
-//   meds: [{ id, name, dose, times: ['08:00', '20:00'], days: 7, color: 'red',
+//   pets: [{ id, name, sex: 'f' | 'm', feedings: ['08:00', '20:00'] }], // meal times per pet (optional)
+//   meds: [{ id, petId, name, dose, times: ['08:00', '20:00'], days: 7, color: 'red',
 //            food: 'none' | 'before' | 'with' | 'after', foodMin: 30,
 //            foodTimes: ['08:00'],      // which meals apply; [] = all
 //            startDate: 'YYYY-MM-DD' }], // optional: this med began later than the treatment
 //   reminders: { offsetMin: 0, repeatMin: 30 },   // 0 = off
 // }
-// When med.food !== 'none', med.times are derived from feedings (± foodMin).
-// Meals show up as a virtual "med" (FEED_ID) so they get a slot, a check and a reminder.
+// When med.food !== 'none', med.times are derived from the pet's feedings (± foodMin).
+// Each pet's meals show up as a virtual "med" (feedId(pet)) so they get a slot, a check and a reminder.
+// Older treatments had a single `pet` name and `feedings` list; petsOf() reads both shapes.
 // med.days === 0 means continuous ("sempre"): doses are generated up to
 // HORIZON_DAYS ahead of today and the app re-syncs the server daily.
 // A "dose" is one med at one date+time. Key: `${date}|${time}|${medId}`.
@@ -25,6 +26,10 @@ export const COLORS = {
 };
 export const FEED_ID = '__feed';
 export const FEED_NAME = 'Ração';
+export const MAIN_PET = 'main'; // id given to the pet migrated from the single-pet shape
+export const isFeed = id => typeof id === 'string' && id.startsWith(FEED_ID);
+// The first (migrated) pet keeps the bare FEED_ID so doses already marked stay valid.
+export const feedId = petId => (petId === MAIN_PET ? FEED_ID : `${FEED_ID}:${petId}`);
 export const FOOD_OPTIONS = [
   { value: 'none',   label: 'não depende' },
   { value: 'before', label: 'antes' },
@@ -98,33 +103,64 @@ export function foodNote(med, feedings = []) {
   return `${med.foodMin} min ${med.food === 'before' ? 'antes' : 'depois'} da ração${which}`;
 }
 
+// Pets of a treatment, tolerating the old single-pet shape.
+export function petsOf(t) {
+  if (Array.isArray(t?.pets) && t.pets.length) return t.pets;
+  return [{ id: MAIN_PET, name: t?.pet || '', sex: 'f', feedings: t?.feedings || [] }];
+}
+export const petById = (t, id) => petsOf(t).find(p => p.id === id) || petsOf(t)[0];
+export const petOfMed = (t, med) => petById(t, med.petId || MAIN_PET);
+export const feedingsFor = (t, med) => petOfMed(t, med).feedings || [];
+
+// Canonical shape: pets array, every med with a petId, no legacy fields.
+export function normalize(t) {
+  if (!t) return t;
+  const pets = petsOf(t).map(p => ({ sex: 'f', feedings: [], ...p }));
+  const meds = (t.meds || []).map(m => ({ ...m, petId: pets.some(p => p.id === m.petId) ? m.petId : pets[0].id }));
+  const { pet: _pet, feedings: _feedings, ...rest } = t; // eslint-disable-line no-unused-vars
+  return { ...rest, pets, meds };
+}
+
+// "da Kika", "do Bolt", "da Kika e do Bolt" — for the title.
+export function petsTitle(pets) {
+  const named = pets.filter(p => p.name);
+  return named.map(p => ({ article: p.sex === 'm' ? 'do' : 'da', name: p.name }));
+}
+
 // First day a med is given: its own start when set, else the treatment's.
 export const medStart = (t, med) => med.startDate || t.startDate;
 
 // Earliest start across meds (the treatment's own start, or earlier if a med says so).
-export function firstDay(t) {
-  if (!isActive(t)) return t?.startDate;
-  return t.meds.reduce((min, m) => (medStart(t, m) < min ? medStart(t, m) : min), t.startDate);
+// With petId, only that pet's meds count.
+export function firstDay(t, petId = null) {
+  const meds = medsOfPet(t, petId);
+  if (!meds.length) return t?.startDate;
+  return meds.reduce((min, m) => (medStart(t, m) < min ? medStart(t, m) : min), medStart(t, meds[0]));
 }
+
+const medsOfPet = (t, petId) => (t?.meds || []).filter(m => petId === null || (m.petId || MAIN_PET) === petId);
 
 const daysBetween = (a, b) => Math.round((fromISODate(b) - fromISODate(a)) / 86400000);
 
-// Real meds + the virtual meal "med", all with effective times and start dates.
-// Meals run from the earliest med start to the latest med end.
+// Real meds + one virtual meal "med" per pet, all with effective times and
+// start dates. A pet's meals run from its earliest med start to its latest end.
 export function allMeds(t) {
   if (!isActive(t)) return [];
-  const feedings = t.feedings || [];
-  const meds = t.meds.map(m => ({ ...m, startDate: medStart(t, m), times: effectiveTimes(m, feedings) }));
-  if (feedings.length) {
-    const td = totalDays(t);
-    meds.push({ id: FEED_ID, name: FEED_NAME, dose: '', startDate: firstDay(t), times: [...feedings].sort((a, b) => t2m(a) - t2m(b)), days: td === Infinity ? 0 : td, color: 'feed', food: 'none', foodMin: 0 });
-  }
+  const meds = t.meds.map(m => ({ ...m, petId: m.petId || MAIN_PET, startDate: medStart(t, m), times: effectiveTimes(m, feedingsFor(t, m)) }));
+  petsOf(t).forEach(pet => {
+    const feedings = pet.feedings || [];
+    if (!feedings.length || !medsOfPet(t, pet.id).length) return;
+    const td = totalDays(t, pet.id);
+    meds.push({ id: feedId(pet.id), petId: pet.id, name: FEED_NAME, dose: '', startDate: firstDay(t, pet.id),
+                times: [...feedings].sort((a, b) => t2m(a) - t2m(b)), days: td === Infinity ? 0 : td, color: 'feed', food: 'none', foodMin: 0 });
+  });
   return meds;
 }
 
-export function newMed(index = 0) {
+export function newMed(index = 0, petId = MAIN_PET) {
   return {
     id: uid(),
+    petId,
     name: '',
     dose: '',
     freq: 12,               // hours between doses, or 'custom'
@@ -137,11 +173,14 @@ export function newMed(index = 0) {
   };
 }
 
+export function newPet() {
+  return { id: uid(), name: '', sex: 'f', feedings: [] };
+}
+
 export function emptyTreatment() {
   return {
-    pet: '',
     startDate: todayISO(),
-    feedings: [],
+    pets: [{ id: MAIN_PET, name: '', sex: 'f', feedings: [] }],
     meds: [],
     reminders: { offsetMin: 0, repeatMin: 30 },
   };
@@ -154,12 +193,13 @@ export function isActive(t) {
 export const isForever = med => Number(med.days) === 0;
 
 // Whole span in days, from the earliest med start to the latest med end;
-// Infinity when any med is continuous.
-export function totalDays(t) {
-  if (!isActive(t)) return 0;
-  if (t.meds.some(isForever)) return Infinity;
-  const first = firstDay(t);
-  return Math.max(...t.meds.map(m => daysBetween(first, medStart(t, m)) + (Number(m.days) || 1)));
+// Infinity when any med is continuous. With petId, only that pet's meds.
+export function totalDays(t, petId = null) {
+  const meds = medsOfPet(t, petId);
+  if (!meds.length) return 0;
+  if (meds.some(isForever)) return Infinity;
+  const first = firstDay(t, petId);
+  return Math.max(...meds.map(m => daysBetween(first, medStart(t, m)) + (Number(m.days) || 1)));
 }
 
 // Number of days to generate for a med: its own, or up to the horizon.
@@ -221,8 +261,15 @@ export function buildDays(t) {
 }
 
 export function medById(t, id) {
-  if (id === FEED_ID) return allMeds(t).find(m => m.id === FEED_ID) || null;
-  return t?.meds?.find(m => m.id === id) || null;
+  if (isFeed(id)) return allMeds(t).find(m => m.id === id) || null;
+  const m = t?.meds?.find(m => m.id === id);
+  return m ? { ...m, petId: m.petId || MAIN_PET } : null;
+}
+
+// Treatment restricted to one pet (null = everyone), for the filtered home view.
+export function forPet(t, petId) {
+  if (!petId || !isActive(t)) return t;
+  return { ...t, meds: t.meds.filter(m => (m.petId || MAIN_PET) === petId) };
 }
 
 export function medsForSlot(t, slot) {
@@ -262,8 +309,9 @@ export function buildReminders(t) {
   const out = [];
   days.forEach(day => day.slots.forEach(slot => {
     const meds = medsForSlot(t, slot);
-    const names = meds.map(m => m.name).join(', ');
-    const mealOnly = meds.length > 0 && meds.every(m => m.id === FEED_ID);
+    const multi = petsOf(t).length > 1;
+    const names = meds.map(m => (multi ? `${petOfMed(t, m).name || 'pet'}: ${m.name}` : m.name)).join(', ');
+    const mealOnly = meds.length > 0 && meds.every(m => isFeed(m.id));
     const what = mealOnly ? 'Hora da ração' : 'Hora do remédio';
     const base = slot.doses[0].at.getTime() + offsetMin * 60000;
     const doseKeys = slot.doses.map(d => d.key);
@@ -283,10 +331,12 @@ export function validate(t) {
     if (m.startDate && !/^\d{4}-\d{2}-\d{2}$/.test(m.startDate)) errs.push(`${m.name || `Remédio ${i + 1}`}: data de início inválida.`);
   });
   if (!t.meds.length) errs.push('Adicione pelo menos um remédio.');
+  const pets = petsOf(t);
+  if (pets.length > 1) pets.forEach((p, i) => { if (!(p.name || '').trim()) errs.push(`Pet ${i + 1}: falta o nome.`); });
   t.meds.forEach((m, i) => {
     if (!m.name.trim()) errs.push(`Remédio ${i + 1}: falta o nome.`);
     const relative = m.food && m.food !== 'none';
-    if (relative && !(t.feedings || []).length) errs.push(`${m.name || `Remédio ${i + 1}`}: defina os horários da ração para usar "${m.food === 'with' ? 'junto' : m.food === 'before' ? 'antes' : 'depois'}".`);
+    if (relative && !feedingsFor(t, m).length) errs.push(`${m.name || `Remédio ${i + 1}`}: defina os horários da ração${pets.length > 1 ? ` de ${petOfMed(t, m).name || 'cada pet'}` : ''} para usar "${m.food === 'with' ? 'junto' : m.food === 'before' ? 'antes' : 'depois'}".`);
     if (!relative && !m.times.length) errs.push(`${m.name || `Remédio ${i + 1}`}: escolha pelo menos um horário.`);
     if (!(Number(m.days) >= 0)) errs.push(`${m.name || `Remédio ${i + 1}`}: duração precisa ser 1 dia ou mais, ou "sempre".`);
   });

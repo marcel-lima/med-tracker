@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { X, Plus, Trash2, PawPrint } from 'lucide-react';
-import { COLORS, COLOR_ORDER, FREQ_PRESETS, FOOD_OPTIONS, newMed, validate, t2m, effectiveTimes, deriveTimes, inferFreq, mealsFor, mealLabel, todayISO, fromISODate, formatDate } from '../lib/treatment';
+import { X, Plus, Trash2, PawPrint, Dog } from 'lucide-react';
+import { COLORS, COLOR_ORDER, FREQ_PRESETS, FOOD_OPTIONS, newMed, newPet, normalize, validate, t2m, effectiveTimes, deriveTimes, inferFreq, mealsFor, mealLabel, todayISO, fromISODate, formatDate } from '../lib/treatment';
 import TimePicker from './TimePicker';
 
 const DAY_PRESETS = [3, 5, 7, 10, 14, 30, 45, 60];
@@ -18,19 +18,22 @@ const joinDose = (qty, unit) => `${qty.trim()} ${unit.trim()}`.trim();
 const laterStart = treatmentStart => (todayISO() > (treatmentStart || '') ? todayISO() : undefined);
 
 
-export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, startWithNew = false }) {
+export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, startWithNew = false, newPetId = null }) {
   const [t, setT] = useState(() => {
-    const meds = initial.meds.map(m => ({ ...newMed(0), ...m, times: [...m.times], freq: m.freq ?? inferFreq(m.times) }));
-    if (!meds.length) meds.push(newMed(0));
+    const base = normalize(initial);
+    const firstPet = base.pets[0].id;
+    const meds = base.meds.map(m => ({ ...newMed(0, firstPet), ...m, times: [...m.times], freq: m.freq ?? inferFreq(m.times) }));
+    if (!meds.length) meds.push(newMed(0, firstPet));
     else if (startWithNew) {
       const used = meds.map(m => m.color);
       const color = COLOR_ORDER.find(c => !used.includes(c)) || COLOR_ORDER[meds.length % COLOR_ORDER.length];
-      meds.push({ ...newMed(meds.length), color, startDate: laterStart(initial.startDate) });
+      const petId = base.pets.some(p => p.id === newPetId) ? newPetId : firstPet;
+      meds.push({ ...newMed(meds.length, petId), color, startDate: laterStart(base.startDate) });
     }
-    return { ...initial, feedings: [...(initial.feedings || [])], meds };
+    return { ...base, pets: base.pets.map(p => ({ ...p, feedings: [...(p.feedings || [])] })), meds };
   });
   const [errors, setErrors] = useState([]);
-  // { kind: 'feed' | 'med', medId?, index, value } while a time is being edited
+  // { kind: 'feed' | 'med', petId?, medId?, index, value } while a time is being edited
   const [picking, setPicking] = useState(null);
   const [colorOpen, setColorOpen] = useState(null); // med id with the color row open
   const isNew = initial.meds.length === 0;
@@ -38,11 +41,12 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, star
   const applyPick = (value) => {
     if (!picking) return;
     if (picking.kind === 'feed') {
-      setT(prev => {
-        const feedings = [...prev.feedings];
+      setT(prev => ({ ...prev, pets: prev.pets.map(p => {
+        if (p.id !== picking.petId) return p;
+        const feedings = [...p.feedings];
         if (picking.index === -1) feedings.push(value); else feedings[picking.index] = value;
-        return { ...prev, feedings: [...new Set(feedings)] };
-      });
+        return { ...p, feedings: [...new Set(feedings)] };
+      }) }));
     } else {
       setT(prev => ({ ...prev, meds: prev.meds.map(m => {
         if (m.id !== picking.medId) return m;
@@ -57,30 +61,43 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, star
   const patchMed = (id, patch) =>
     setT(prev => ({ ...prev, meds: prev.meds.map(m => (m.id === id ? { ...m, ...patch } : m)) }));
 
-  const addMed = () => setT(prev => {
+  const addMed = (petId) => setT(prev => {
     const used = prev.meds.map(m => m.color);
     const color = COLOR_ORDER.find(c => !used.includes(c)) || COLOR_ORDER[prev.meds.length % COLOR_ORDER.length];
-    return { ...prev, meds: [...prev.meds, { ...newMed(prev.meds.length), color, startDate: laterStart(prev.startDate) }] };
+    const pid = prev.pets.some(p => p.id === petId) ? petId : (prev.meds.at(-1)?.petId || prev.pets[0].id);
+    return { ...prev, meds: [...prev.meds, { ...newMed(prev.meds.length, pid), color, startDate: laterStart(prev.startDate) }] };
   });
 
   const removeMed = id => setT(prev => ({ ...prev, meds: prev.meds.filter(m => m.id !== id) }));
 
+  const patchPet = (id, patch) => setT(prev => ({ ...prev, pets: prev.pets.map(p => (p.id === id ? { ...p, ...patch } : p)) }));
+  const addPet = () => setT(prev => ({ ...prev, pets: [...prev.pets, newPet()] }));
+  const removePet = id => setT(prev => {
+    if (prev.pets.length <= 1) return prev;
+    const owned = prev.meds.filter(m => m.petId === id);
+    if (owned.length && !confirm(`Remover este pet e seus ${owned.length} remédio(s)?`)) return prev;
+    return { ...prev, pets: prev.pets.filter(p => p.id !== id), meds: prev.meds.filter(m => m.petId !== id) };
+  });
+  const petFeedings = petId => t.pets.find(p => p.id === petId)?.feedings || [];
+
   const save = () => {
-    const feedings = [...t.feedings].sort((a, b) => t2m(a) - t2m(b));
+    const pets = t.pets.map(p => ({ ...p, name: (p.name || '').trim().slice(0, 30), feedings: [...p.feedings].sort((a, b) => t2m(a) - t2m(b)) }));
     const clean = {
       ...t,
-      pet: (t.pet || '').trim(),
-      feedings,
-      meds: t.meds.map(m => ({
-        ...m,
-        name: m.name.trim(),
-        dose: m.dose.trim(),
-        days: m.days === '' ? 1 : Math.max(0, Number(m.days) || 0),
-        startDate: m.startDate && m.startDate !== t.startDate ? m.startDate : undefined,
-        foodMin: Math.max(0, Number(m.foodMin) || 0),
-        foodTimes: (m.foodTimes || []).filter(f => feedings.includes(f)),
-        times: m.food !== 'none' && feedings.length ? effectiveTimes(m, feedings) : [...m.times].sort((a, b) => t2m(a) - t2m(b)),
-      })),
+      pets,
+      meds: t.meds.map(m => {
+        const feedings = pets.find(p => p.id === m.petId)?.feedings || [];
+        return {
+          ...m,
+          name: m.name.trim(),
+          dose: m.dose.trim(),
+          days: m.days === '' ? 1 : Math.max(0, Number(m.days) || 0),
+          startDate: m.startDate && m.startDate !== t.startDate ? m.startDate : undefined,
+          foodMin: Math.max(0, Number(m.foodMin) || 0),
+          foodTimes: (m.foodTimes || []).filter(f => feedings.includes(f)),
+          times: m.food !== 'none' && feedings.length ? effectiveTimes(m, feedings) : [...m.times].sort((a, b) => t2m(a) - t2m(b)),
+        };
+      }),
     };
     const errs = validate(clean);
     setErrors(errs);
@@ -99,44 +116,55 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, star
           <button onClick={onCancel} className="icon-btn" aria-label="Fechar"><X size={16} /></button>
         </header>
 
-        {/* Pet + start date */}
-        <section className="card mb-4 flex flex-col gap-3">
+        {/* Pets: name, pronoun and meal times, one card each */}
+        {t.pets.map((pet, pi) => (
+          <section key={pet.id} className="card mb-4 flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <Dog size={16} style={{ color: COLORS.feed.a, flexShrink: 0 }} />
+              <input id={`pet-name-${pet.id}`} className="input flex-1 text-base font-medium" placeholder={t.pets.length > 1 ? `Pet ${pi + 1}` : 'ex.: Kika'}
+                     value={pet.name || ''} onChange={e => patchPet(pet.id, { name: e.target.value.slice(0, 30) })} />
+              <div className="flex gap-1">
+                <button onClick={() => patchPet(pet.id, { sex: 'f' })} className={`chip ${pet.sex !== 'm' ? 'chip-on' : ''}`} aria-label="Fêmea">ela</button>
+                <button onClick={() => patchPet(pet.id, { sex: 'm' })} className={`chip ${pet.sex === 'm' ? 'chip-on' : ''}`} aria-label="Macho">ele</button>
+              </div>
+              {t.pets.length > 1 && (
+                <button onClick={() => removePet(pet.id)} className="icon-btn" aria-label="Remover pet"><Trash2 size={14} /></button>
+              )}
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <PawPrint size={13} style={{ color: COLORS.feed.a }} />
+                <span className="text-xs font-medium">Ração{pet.name ? ` de ${pet.name}` : ''}</span>
+              </div>
+              <p className="text-xs mb-2" style={{ color: 'var(--muted)' }}>
+                Opcional. Com os horários da ração você pode marcar um remédio como antes, junto ou depois de comer.
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {[...pet.feedings].sort((a, b) => t2m(a) - t2m(b)).map((time) => {
+                  const index = pet.feedings.indexOf(time);
+                  return (
+                    <span key={time} className="time-pill">
+                      <button className="tabular-nums" onClick={() => setPicking({ kind: 'feed', petId: pet.id, index, value: time })}>{time}</button>
+                      <button onClick={() => patchPet(pet.id, { feedings: pet.feedings.filter((_, j) => j !== index) })}
+                              aria-label="Remover horário da ração"><X size={12} /></button>
+                    </span>
+                  );
+                })}
+                <button className="chip" onClick={() => setPicking({ kind: 'feed', petId: pet.id, index: -1, value: pet.feedings.length ? '20:00' : '08:00' })}>
+                  <Plus size={12} /> horário da ração
+                </button>
+              </div>
+            </div>
+          </section>
+        ))}
+        <button onClick={addPet} className="btn w-full mb-4"><Plus size={14} /> Adicionar pet</button>
+
+        <section className="card mb-4">
           <label className="flex items-center justify-between gap-3">
-            <span className="text-sm font-medium">Pet</span>
-            <input id="pet-name" className="input w-40 text-right" placeholder="ex.: Kika" value={t.pet || ''}
-                   onChange={e => setT(prev => ({ ...prev, pet: e.target.value.slice(0, 30) }))} />
-          </label>
-          <label className="flex items-center justify-between gap-3">
-            <span className="text-sm font-medium">Início</span>
+            <span className="text-sm font-medium">Início do tratamento</span>
             <input type="date" className="input w-auto" value={t.startDate}
                    onChange={e => setT(prev => ({ ...prev, startDate: e.target.value }))} />
           </label>
-        </section>
-
-        {/* Feedings */}
-        <section className="card mb-4">
-          <div className="flex items-center gap-2 mb-1">
-            <PawPrint size={14} style={{ color: COLORS.feed.a }} />
-            <span className="text-sm font-medium">Ração</span>
-          </div>
-          <p className="text-xs mb-3" style={{ color: 'var(--muted)' }}>
-            Opcional. Com os horários da ração você pode marcar um remédio como antes, junto ou depois de comer.
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {[...t.feedings].sort((a, b) => t2m(a) - t2m(b)).map((time) => {
-              const index = t.feedings.indexOf(time);
-              return (
-                <span key={time} className="time-pill">
-                  <button className="tabular-nums" onClick={() => setPicking({ kind: 'feed', index, value: time })}>{time}</button>
-                  <button onClick={() => setT(prev => ({ ...prev, feedings: prev.feedings.filter((_, j) => j !== index) }))}
-                          aria-label="Remover horário da ração"><X size={12} /></button>
-                </span>
-              );
-            })}
-            <button className="chip" onClick={() => setPicking({ kind: 'feed', index: -1, value: t.feedings.length ? '20:00' : '08:00' })}>
-              <Plus size={12} /> horário da ração
-            </button>
-          </div>
         </section>
 
         {/* Meds */}
@@ -159,6 +187,16 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, star
                     <button onClick={() => removeMed(med.id)} className="icon-btn" aria-label="Remover"><Trash2 size={14} /></button>
                   )}
                 </div>
+
+                {t.pets.length > 1 && (
+                  <div className="flex flex-wrap items-center gap-1.5 mb-4">
+                    <span className="eyebrow mr-1">de</span>
+                    {t.pets.map((p, pi) => (
+                      <button key={p.id} onClick={() => patchMed(med.id, { petId: p.id, foodTimes: [] })}
+                              className={`chip ${med.petId === p.id ? 'chip-on' : ''}`}>{p.name || `Pet ${pi + 1}`}</button>
+                    ))}
+                  </div>
+                )}
 
                 {colorOpen === med.id && (
                   <div className="flex items-center gap-2.5 mb-4 pl-0.5">
@@ -209,19 +247,19 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, star
                     </div>
                   </div>
                 )}
-                {med.food !== 'none' && t.feedings.length > 1 && (
+                {med.food !== 'none' && petFeedings(med.petId).length > 1 && (
                   <div className="mb-2">
                     <p className="text-xs mb-1.5" style={{ color: 'var(--muted)' }}>em quais refeições</p>
                     <div className="flex flex-wrap gap-1.5">
-                      {[...t.feedings].sort((a, b) => t2m(a) - t2m(b)).map(f => {
-                        const meals = mealsFor(med, t.feedings);
+                      {[...petFeedings(med.petId)].sort((a, b) => t2m(a) - t2m(b)).map(f => {
+                        const meals = mealsFor(med, petFeedings(med.petId));
                         const on = meals.includes(f);
                         return (
                           <button key={f} className={`chip tabular-nums ${on ? 'chip-on' : ''}`}
                                   onClick={() => {
                                     const next = on ? meals.filter(x => x !== f) : [...meals, f];
                                     if (!next.length) return; // keep at least one meal
-                                    patchMed(med.id, { foodTimes: next.length === t.feedings.length ? [] : next });
+                                    patchMed(med.id, { foodTimes: next.length === petFeedings(med.petId).length ? [] : next });
                                   }}>
                             {f} · {mealLabel(f)}
                           </button>
@@ -232,8 +270,8 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, star
                 )}
                 {med.food !== 'none' && (
                   <p className="text-xs mb-4" style={{ color: 'var(--muted)' }}>
-                    {t.feedings.length
-                      ? <>horários: <span className="tabular-nums" style={{ color: 'var(--fg)' }}>{effectiveTimes(med, t.feedings).join(' · ')}</span></>
+                    {petFeedings(med.petId).length
+                      ? <>horários: <span className="tabular-nums" style={{ color: 'var(--fg)' }}>{effectiveTimes(med, petFeedings(med.petId)).join(' · ')}</span></>
                       : 'defina os horários da ração acima'}
                   </p>
                 )}
@@ -323,7 +361,7 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, star
           })}
         </div>
 
-        <button onClick={addMed} className="btn w-full mt-3"><Plus size={14} /> Adicionar remédio</button>
+        <button onClick={() => addMed()} className="btn w-full mt-3"><Plus size={14} /> Adicionar remédio</button>
 
         {errors.length > 0 && (
           <ul className="mt-4 text-sm" style={{ color: COLORS.red.a }}>
