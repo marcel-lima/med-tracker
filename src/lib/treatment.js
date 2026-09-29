@@ -78,7 +78,7 @@ export function inferFreq(times) {
 // Meals a med is tied to: its chosen subset, or every meal when none chosen.
 export function mealsFor(med, feedings = []) {
   const chosen = (med.foodTimes || []).filter(f => feedings.includes(f));
-  return chosen.length ? chosen : [...feedings];
+  return (chosen.length ? chosen : [...feedings]).sort((a, b) => t2m(a) - t2m(b));
 }
 
 export function mealLabel(time) {
