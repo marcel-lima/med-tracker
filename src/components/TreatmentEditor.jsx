@@ -233,7 +233,7 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, star
                         <button key={v} onClick={() => patchMed(med.id, { foodMin: v })}
                                 className={`chip tabular-nums ${Number(med.foodMin) === v ? 'chip-on' : ''}`}>{v} min</button>
                       ))}
-                      <span className="time-pill">
+                      <span className={`time-pill ${med.foodMin !== '' && ![15, 30, 45, 60, 120].includes(Number(med.foodMin)) ? 'pill-on' : ''}`}>
                         <input
                           id={`foodmin-${med.id}`}
                           inputMode="numeric"
@@ -325,7 +325,9 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, star
                           className={`chip ${!med.startDate || med.startDate === t.startDate ? 'chip-on' : ''}`}>início do tratamento</button>
                   <button onClick={() => patchMed(med.id, { startDate: todayISO() })}
                           className={`chip ${med.startDate === todayISO() && todayISO() !== t.startDate ? 'chip-on' : ''}`}>hoje</button>
-                  <input type="date" aria-label="Data em que começou este remédio" className="input w-auto" style={{ height: '2.125rem', fontSize: '0.8125rem' }}
+                  <input type="date" aria-label="Data em que começou este remédio"
+                         className={`input w-auto ${med.startDate && med.startDate !== t.startDate && med.startDate !== todayISO() ? 'input-on' : ''}`}
+                         style={{ height: '2.125rem', fontSize: '0.8125rem' }}
                          value={med.startDate || t.startDate}
                          onChange={e => patchMed(med.id, { startDate: e.target.value || undefined })} />
                 </div>
@@ -343,7 +345,7 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, star
                   ))}
                   <button onClick={() => patchMed(med.id, { days: 0 })}
                           className={`chip ${Number(med.days) === 0 && med.days !== '' ? 'chip-on' : ''}`}>sempre</button>
-                  <span className="time-pill">
+                  <span className={`time-pill ${med.days !== '' && Number(med.days) > 0 && !DAY_PRESETS.includes(Number(med.days)) ? 'pill-on' : ''}`}>
                     <input
                       id={`days-${med.id}`}
                       inputMode="numeric"

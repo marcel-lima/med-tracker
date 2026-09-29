@@ -89,6 +89,7 @@
   }
   .input:focus { border-color: var(--fg); }
   .input::placeholder { color: var(--muted); }
+  .input.input-on { background: var(--primary); border-color: var(--primary); color: var(--primary-fg); color-scheme: dark; }
   .chip {
     display: inline-flex; align-items: center; gap: 0.25rem;
     height: 2.125rem; padding: 0 0.75rem; border-radius: 999px;
