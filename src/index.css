@@ -105,6 +105,10 @@
   .time-pill input { background: transparent; border: 0; outline: none; font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
   .time-pill > button:first-child { color: var(--fg); font-weight: 500; font-variant-numeric: tabular-nums; }
   .time-pill button { color: var(--muted); display: inline-flex; }
+  /* A typed value counts as the selected choice: same look as a chip-on */
+  .time-pill.pill-on { background: var(--primary); border-color: var(--primary); color: var(--primary-fg); }
+  .time-pill.pill-on input, .time-pill.pill-on span, .time-pill.pill-on > button:first-child { color: var(--primary-fg) !important; }
+  .time-pill.pill-on input::placeholder { color: var(--primary-fg); opacity: .6; }
   .sheet-full {
     position: fixed; inset: 0; z-index: 50; overflow-y: auto;
     background: var(--bg);

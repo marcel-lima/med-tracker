@@ -407,7 +407,7 @@ function DoseField({ dose, onChange, id }) {
           <button key={q} onClick={() => onChange(joinDose(q, unit))}
                   className={`chip tabular-nums ${qty === q ? 'chip-on' : ''}`}>{q}</button>
         ))}
-        <span className="time-pill">
+        <span className={`time-pill ${qty && !QTY_PRESETS.includes(qty) ? 'pill-on' : ''}`}>
           <input
             id={`qty-${id}`}
             inputMode="decimal"
@@ -424,7 +424,7 @@ function DoseField({ dose, onChange, id }) {
                   className={`chip ${unit === u ? 'chip-on' : ''}`}>{u}</button>
         ))}
         {otherOpen ? (
-          <span className="time-pill">
+          <span className="time-pill pill-on">
             <input
               id={`unit-${id}`}
               aria-label="Unidade"
