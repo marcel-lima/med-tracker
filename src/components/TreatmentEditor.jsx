@@ -93,6 +93,10 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, star
           dose: m.dose.trim(),
           days: m.days === '' ? 1 : Math.max(0, Number(m.days) || 0),
           startDate: m.startDate && m.startDate !== t.startDate ? m.startDate : undefined,
+          startTime: (() => {
+            const times = (m.food !== 'none' && feedings.length ? effectiveTimes(m, feedings) : [...m.times]).sort((a, b) => t2m(a) - t2m(b));
+            return times.indexOf(m.startTime) > 0 ? m.startTime : undefined;
+          })(),
           foodMin: Math.max(0, Number(m.foodMin) || 0),
           foodTimes: (m.foodTimes || []).filter(f => feedings.includes(f)),
           times: m.food !== 'none' && feedings.length ? effectiveTimes(m, feedings) : [...m.times].sort((a, b) => t2m(a) - t2m(b)),
@@ -336,6 +340,31 @@ export default function TreatmentEditor({ initial, onSave, onCancel, onEnd, star
                     Aparece só a partir de {formatDate(fromISODate(med.startDate))}; dias anteriores não ficam pendentes.
                   </p>
                 )}
+                {(() => {
+                  const times = (med.food !== 'none' ? effectiveTimes(med, petFeedings(med.petId)) : [...med.times]).sort((a, b) => t2m(a) - t2m(b));
+                  if (times.length < 2) return null;
+                  const sel = times.includes(med.startTime) ? med.startTime : times[0];
+                  const skipped = times.indexOf(sel);
+                  return (
+                    <div className="mb-4">
+                      <p className="text-xs mb-1.5" style={{ color: 'var(--muted)' }}>no primeiro dia, começou pela dose das</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {times.map((tm, i) => (
+                          <button key={tm} onClick={() => patchMed(med.id, { startTime: i === 0 ? undefined : tm })}
+                                  className={`chip tabular-nums ${sel === tm ? 'chip-on' : ''}`}>{tm}</button>
+                        ))}
+                      </div>
+                      {skipped > 0 && Number(med.days) > 0 && (() => {
+                        const end = fromISODate(med.startDate || t.startDate); end.setDate(end.getDate() + Number(med.days));
+                        return (
+                          <p className="text-xs mt-1.5" style={{ color: 'var(--muted)' }}>
+                            {Number(med.days) * times.length} doses no total ({med.days} dias × {times.length}); {skipped === 1 ? 'a dose pulada' : `as ${skipped} doses puladas`} no primeiro dia {skipped === 1 ? 'é compensada' : 'são compensadas'} no fim. Última dose: {formatDate(end)} · {times[skipped - 1]}.
+                          </p>
+                        );
+                      })()}
+                    </div>
+                  );
+                })()}
 
                 <p className="eyebrow mb-2">duração</p>
                 <div className="flex flex-wrap items-center gap-1.5">

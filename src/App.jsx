@@ -391,8 +391,10 @@ export default function App() {
                         <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: COLORS[m.color].a }} />
                         <span className="flex-1 min-w-0">
                           <span className="text-sm font-medium block break-words">{m.name}</span>
-                          {!isFeed(m.id) && m.startDate !== treatment.startDate && (
-                            <span className="block text-[0.6875rem]" style={{ color: 'var(--muted)' }}>desde {formatDate(fromISODate(m.startDate))}</span>
+                          {!isFeed(m.id) && (m.startDate !== treatment.startDate || m.startTime) && (
+                            <span className="block text-[0.6875rem]" style={{ color: 'var(--muted)' }}>
+                              desde {formatDate(fromISODate(m.startDate))}{m.startTime ? ` · ${m.startTime}` : ''}
+                            </span>
                           )}
                         </span>
                         <span className="text-xs" style={{ color: 'var(--muted)' }}>{isFeed(m.id) ? '' : m.dose || foodNote(m, feedingsFor(treatment, m)) || ''}</span>

@@ -5,7 +5,9 @@
 //   meds: [{ id, petId, name, dose, times: ['08:00', '20:00'], days: 7, color: 'red',
 //            food: 'none' | 'before' | 'with' | 'after', foodMin: 30,
 //            foodTimes: ['08:00'],      // which meals apply; [] = all
-//            startDate: 'YYYY-MM-DD' }], // optional: this med began later than the treatment
+//            startDate: 'YYYY-MM-DD',    // optional: this med began later than the treatment
+//            startTime: 'HH:MM' }],      // optional: first dose of the start day (skips earlier slots;
+//                                         //   days × doses/day still holds, so the course runs into an extra day)
 //   reminders: { offsetMin: 0, repeatMin: 30 },   // 0 = off
 // }
 // When med.food !== 'none', med.times are derived from the pet's feedings (± foodMin).
@@ -199,12 +201,27 @@ export function totalDays(t, petId = null) {
   if (!meds.length) return 0;
   if (meds.some(isForever)) return Infinity;
   const first = firstDay(t, petId);
-  return Math.max(...meds.map(m => daysBetween(first, medStart(t, m)) + (Number(m.days) || 1)));
+  return Math.max(...meds.map(m => daysBetween(first, medStart(t, m)) + medSpanDays(m)));
+}
+
+// How many of the day's slots are skipped on the start day (first dose later in the day).
+function skippedOnFirstDay(med) {
+  if (!med.startTime) return 0;
+  const times = [...med.times].sort((a, b) => t2m(a) - t2m(b));
+  const i = times.indexOf(med.startTime);
+  return i > 0 ? i : 0;
+}
+
+// Calendar days a med occupies: its own count, plus one when the first day
+// is partial (the skipped doses are made up at the end).
+export function medSpanDays(med) {
+  if (isForever(med)) return Infinity;
+  return Math.max(1, Number(med.days) || 1) + (skippedOnFirstDay(med) > 0 ? 1 : 0);
 }
 
 // Number of days to generate for a med: its own, or up to the horizon.
 function spanDays(med, start) {
-  if (!isForever(med)) return Math.max(1, Number(med.days) || 1);
+  if (!isForever(med)) return medSpanDays(med);
   const end = new Date(); end.setDate(end.getDate() + HORIZON_DAYS);
   return Math.max(1, Math.round((end - start) / 86400000) + 1);
 }
@@ -227,10 +244,18 @@ export function buildDoses(t) {
   allMeds(t).forEach(med => {
     const start = fromISODate(med.startDate);
     const days = spanDays(med, start);
-    for (let i = 0; i < days; i++) {
+    const times = [...med.times].sort((a, b) => t2m(a) - t2m(b));
+    const skip = skippedOnFirstDay(med);
+    // Total doses of the course: days × doses per day (unbounded when continuous)
+    const total = isForever(med) ? Infinity : Math.max(1, Number(med.days) || 1) * times.length;
+    let count = 0;
+    for (let i = 0; i < days && count < total; i++) {
       const d = new Date(start); d.setDate(d.getDate() + i);
       const date = toISODate(d);
-      [...med.times].sort((a, b) => t2m(a) - t2m(b)).forEach(time => {
+      times.forEach((time, j) => {
+        if (i === 0 && j < skip) return;
+        if (count >= total) return;
+        count++;
         out.push({ key: doseKey(date, time, med.id), date, time, medId: med.id, at: doseDate(date, time) });
       });
     }
