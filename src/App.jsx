@@ -230,7 +230,7 @@ export default function App() {
         {/* ── Pet filter (only with more than one pet) ── */}
         {active && multi && (
           <div className="flex flex-wrap justify-center gap-1.5 mb-5">
-            <button onClick={() => setPetFilter(null)} className={`chip ${!filter ? 'chip-on' : ''}`}>todos</button>
+            <button onClick={() => setPetFilter(null)} className={`chip ${!filter ? 'chip-on' : ''}`}>Todos</button>
             {pets.map(p => (
               <button key={p.id} onClick={() => setPetFilter(p.id)} className={`chip ${filter === p.id ? 'chip-on' : ''}`}>{p.name || 'pet'}</button>
             ))}
