@@ -301,14 +301,14 @@ export function medsForSlot(t, slot) {
   return slot.doses.map(d => medById(t, d.medId)).filter(Boolean);
 }
 
-// Next slot that still has an unchecked dose. Grace: a slot counts as
-// "next" until 60 min after its time, then we move on.
+// Next slot that still has an unchecked dose. Any slot of today (or later)
+// with something open counts, however late it is; earlier days are left behind.
 export function findNextSlot(days, checked, now = new Date()) {
-  const cutoff = now.getTime() - 60 * 60000;
+  const today = toISODate(now);
   for (const day of days) {
+    if (day.date < today) continue;
     for (const slot of day.slots) {
       if (slot.doses.every(d => checked[d.key])) continue;
-      if (slot.doses[0].at.getTime() < cutoff) continue;
       return { day, slot };
     }
   }

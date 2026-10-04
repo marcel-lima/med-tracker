@@ -187,7 +187,9 @@ export default function App() {
 
   const nextMeds = nextSlot ? medsForSlot(treatment, nextSlot.slot) : [];
   const nextIsToday = nextSlot?.day.date === today;
+  const nextIsLate = !!nextSlot && nextSlot.slot.doses[0].at.getTime() < now.getTime() - 60 * 60000;
   const nextLabel = !nextSlot ? null
+    : nextIsLate ? 'ainda em aberto'
     : nextIsToday ? 'próxima dose'
     : nextSlot.day.date === daysAfter(today, 1) ? 'amanhã'
     : formatDate(nextSlot.day.dateObj);
@@ -259,7 +261,7 @@ export default function App() {
             <div className="text-center mb-8 fade-up" style={{ animationDelay: '.5s' }}>
               {nextSlot ? (
                 <>
-                  <p className="eyebrow mb-1">{nextLabel}</p>
+                  <p className="eyebrow mb-1" style={{ color: nextIsLate ? 'var(--accent)' : undefined }}>{nextLabel}</p>
                   <div className="text-[3.5rem] leading-none font-semibold tracking-tight tabular-nums mb-2">{nextSlot.slot.time}</div>
                   <div className="flex flex-wrap justify-center gap-1.5">
                     {nextMeds.map(m => (
@@ -327,7 +329,7 @@ export default function App() {
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-lg font-semibold tabular-nums" style={{ color: done ? 'var(--muted)' : 'var(--fg)' }}>{slot.time}</span>
                       <span className="eyebrow" style={{ color: isNext && !done ? 'var(--primary)' : late && !done ? 'var(--accent)' : undefined }}>
-                        {done ? `dado${slotBy(slot, checked) ? ` · ${slotBy(slot, checked)}` : ''}` : isNext ? 'próxima' : late ? 'atrasada' : ''}
+                        {done ? `dado${slotBy(slot, checked) ? ` · ${slotBy(slot, checked)}` : ''}` : late ? 'atrasada' : isNext ? 'próxima' : ''}
                       </span>
                     </div>
                     <div className="flex flex-col gap-2.5">
