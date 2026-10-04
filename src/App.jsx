@@ -37,6 +37,7 @@ export default function App() {
   const [showDevice, setShowDevice] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const toastTimer = useRef(null);
+  const stripRef = useRef(null);
 
   const active = isActive(treatment);
   const pets = petsOf(treatment);
@@ -97,6 +98,16 @@ export default function App() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  // Keep the selected day centred in the day strip (on open and when it changes)
+  useEffect(() => {
+    const strip = stripRef.current;
+    const el = strip?.querySelector('[data-sel="1"]');
+    if (!strip || !el) return;
+    const left = el.offsetLeft - (strip.clientWidth - el.offsetWidth) / 2;
+    strip.scrollTo({ left: Math.max(0, left), behavior: strip.dataset.ready ? 'smooth' : 'auto' });
+    strip.dataset.ready = '1';
+  }, [selIdx, days.length]);
 
   // Clock tick
   useEffect(() => {
@@ -281,14 +292,14 @@ export default function App() {
             </div>
 
             {/* ── Day strip ── */}
-            <div className="flex gap-1 mb-6 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
+            <div ref={stripRef} className="flex gap-1 mb-6 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
               {days.map((day, i) => {
                 const { total, done } = dayProgress(day, checked);
                 const isToday = day.date === today;
                 const isSel = i === selIdx;
                 const complete = total > 0 && done === total;
                 return (
-                  <button key={day.date} onClick={() => setSelDate(day.date)}
+                  <button key={day.date} onClick={() => setSelDate(day.date)} data-sel={isSel ? '1' : undefined}
                           className="flex-shrink-0 flex flex-col items-center gap-1 w-[2.5rem] py-2 rounded-2xl transition-colors"
                           style={{ background: isSel ? 'var(--card)' : 'transparent', boxShadow: isSel ? '0 1px 2px rgba(28,36,81,.06)' : 'none' }}>
                     <span className="text-[0.5625rem] uppercase tracking-wider" style={{ color: isSel ? 'var(--fg)' : 'var(--muted)' }}>
